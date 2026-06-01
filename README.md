@@ -2,6 +2,8 @@
 
 Athom Homey app that subscribes to Frigate MQTT messages and exposes trigger Flow cards for tracked object metadata updates and review updates.
 
+<img width="650" height="650" alt="image" src="https://github.com/user-attachments/assets/c2dad3d9-44d2-4721-818c-2f5c054b3b49" />
+
 ## Features
 
 - MQTT connection configured from app settings
