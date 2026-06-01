@@ -1,0 +1,11 @@
+{
+  "name": "com.glacialengineering.homey.frigate",
+  "version": "1.0.0",
+  "main": "app.js",
+  "scripts": {
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "mqtt": "^5.10.4"
+  }
+}

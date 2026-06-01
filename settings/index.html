@@ -1,0 +1,93 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <script type="text/javascript" src="/homey.js" data-origin="settings"></script>
+  </head>
+  <body>
+    <h1 data-i18n="settings.title"></h1>
+
+    <fieldset>
+      <legend data-i18n="settings.mqtt"></legend>
+
+      <div class="field row">
+        <label for="mqttProtocol" data-i18n="settings.mqttProtocol"></label>
+        <select id="mqttProtocol">
+          <option value="mqtt">mqtt</option>
+          <option value="mqtts">mqtts</option>
+        </select>
+      </div>
+
+      <div class="field row">
+        <label for="mqttHost" data-i18n="settings.mqttHost"></label>
+        <input id="mqttHost" type="text" placeholder="192.168.1.10">
+      </div>
+
+      <div class="field row">
+        <label for="mqttPort" data-i18n="settings.mqttPort"></label>
+        <input id="mqttPort" type="number" min="1" max="65535" step="1" placeholder="1883">
+      </div>
+
+      <div class="field row">
+        <label for="mqttUsername" data-i18n="settings.mqttUsername"></label>
+        <input id="mqttUsername" type="text">
+      </div>
+
+      <div class="field row">
+        <label for="mqttPassword" data-i18n="settings.mqttPassword"></label>
+        <input id="mqttPassword" type="password">
+      </div>
+
+      <div class="field row">
+        <label for="mqttClientId" data-i18n="settings.mqttClientId"></label>
+        <input id="mqttClientId" type="text" placeholder="homey-frigate">
+      </div>
+
+      <div class="field row">
+        <label for="topicPrefix" data-i18n="settings.topicPrefix"></label>
+        <input id="topicPrefix" type="text" placeholder="frigate">
+      </div>
+
+      <div class="field row">
+        <label for="frigateBaseUrl" data-i18n="settings.frigateBaseUrl"></label>
+        <input id="frigateBaseUrl" type="url" placeholder="http://frigate.local:5000">
+      </div>
+    </fieldset>
+
+    <button id="save" class="right" data-i18n="settings.save"></button>
+
+    <script type="text/javascript">
+      const settingsKeys = [
+        'mqttProtocol',
+        'mqttHost',
+        'mqttPort',
+        'mqttUsername',
+        'mqttPassword',
+        'mqttClientId',
+        'topicPrefix',
+        'frigateBaseUrl',
+      ];
+
+      function onHomeyReady(Homey) {
+        settingsKeys.forEach((key) => {
+          Homey.get(key, (err, value) => {
+            if (err) return Homey.alert(err);
+            if (value !== null && value !== undefined) document.getElementById(key).value = value;
+          });
+        });
+
+        document.getElementById('save').addEventListener('click', () => {
+          Promise.all(settingsKeys.map((key) => new Promise((resolve, reject) => {
+            const element = document.getElementById(key);
+            const value = element.type === 'number' && element.value !== '' ? Number(element.value) : element.value;
+            Homey.set(key, value, (err) => err ? reject(err) : resolve());
+          })))
+            .then(() => Homey.alert(Homey.__('settings.saved')))
+            .catch((err) => Homey.alert(err));
+        });
+
+        Homey.ready();
+      }
+    </script>
+  </body>
+</html>

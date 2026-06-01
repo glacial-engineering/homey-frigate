@@ -1,0 +1,239 @@
+{
+  "id": "com.glacialengineering.homey.frigate",
+  "version": "1.0.0",
+  "compatibility": ">=5.0.0",
+  "sdk": 3,
+  "platforms": ["local"],
+  "brandColor": "#2563EB",
+  "name": {
+    "en": "Frigate"
+  },
+  "description": {
+    "en": "Trigger Homey Flows from Frigate MQTT events"
+  },
+  "category": ["security"],
+  "tags": {
+    "en": ["frigate", "camera", "security", "mqtt", "nvr"]
+  },
+  "images": {
+    "small": "/assets/images/small.png",
+    "large": "/assets/images/large.png",
+    "xlarge": "/assets/images/xlarge.png"
+  },
+  "permissions": [],
+  "author": {
+    "name": "Glacial Engineering",
+    "email": "github@glacial.engineering"
+  },
+  "flow": {
+    "triggers": [
+      {
+        "id": "tracked_object_update",
+        "title": { "en": "Tracked object metadata updated" },
+        "titleFormatted": { "en": "Tracked object [[update_type]] update on [[camera]]" },
+        "args": [
+          {
+            "name": "update_type",
+            "type": "dropdown",
+            "title": { "en": "Update type" },
+            "values": [
+              { "id": "any", "label": { "en": "Any" } },
+              { "id": "description", "label": { "en": "Description" } },
+              { "id": "face", "label": { "en": "Face" } },
+              { "id": "lpr", "label": { "en": "License plate" } },
+              { "id": "classification", "label": { "en": "Classification" } }
+            ]
+          },
+          { "name": "camera", "type": "text", "title": { "en": "Camera" }, "placeholder": { "en": "Leave empty for any camera" }, "required": false }
+        ],
+        "tokens": [
+          { "name": "id", "type": "string", "title": { "en": "Object/Event ID" } },
+          { "name": "update_type", "type": "string", "title": { "en": "Update Type" } },
+          { "name": "camera", "type": "string", "title": { "en": "Camera" } },
+          { "name": "timestamp", "type": "number", "title": { "en": "Timestamp" } },
+          { "name": "description", "type": "string", "title": { "en": "Description" } },
+          { "name": "name", "type": "string", "title": { "en": "Name" } },
+          { "name": "score", "type": "number", "title": { "en": "Score" } },
+          { "name": "plate", "type": "string", "title": { "en": "Plate" } },
+          { "name": "model", "type": "string", "title": { "en": "Model" } },
+          { "name": "sub_label", "type": "string", "title": { "en": "Sub Label" } },
+          { "name": "attribute", "type": "string", "title": { "en": "Attribute" } },
+          { "name": "raw_json", "type": "string", "title": { "en": "Raw JSON" } }
+        ]
+      },
+      {
+        "id": "object_description_updated",
+        "title": { "en": "Object description updated" },
+        "titleFormatted": { "en": "Object description updated on [[camera]]" },
+        "args": [
+          { "name": "camera", "type": "text", "title": { "en": "Camera" }, "placeholder": { "en": "Leave empty for any camera" }, "required": false }
+        ],
+        "tokens": [
+          { "name": "id", "type": "string", "title": { "en": "Object/Event ID" } },
+          { "name": "camera", "type": "string", "title": { "en": "Camera" } },
+          { "name": "description", "type": "string", "title": { "en": "Description" } },
+          { "name": "raw_json", "type": "string", "title": { "en": "Raw JSON" } }
+        ]
+      },
+      {
+        "id": "face_recognized",
+        "title": { "en": "Face recognized" },
+        "titleFormatted": { "en": "Face [[name]] recognized on [[camera]] with score at least [[min_score]]" },
+        "args": [
+          { "name": "camera", "type": "text", "title": { "en": "Camera" }, "placeholder": { "en": "Leave empty for any camera" }, "required": false },
+          { "name": "name", "type": "text", "title": { "en": "Name" }, "placeholder": { "en": "Leave empty for any name" }, "required": false },
+          { "name": "min_score", "type": "number", "title": { "en": "Minimum score" }, "min": 0, "max": 1, "step": 0.01, "placeholder": { "en": "0" }, "required": false }
+        ],
+        "tokens": [
+          { "name": "id", "type": "string", "title": { "en": "Object/Event ID" } },
+          { "name": "camera", "type": "string", "title": { "en": "Camera" } },
+          { "name": "name", "type": "string", "title": { "en": "Name" } },
+          { "name": "score", "type": "number", "title": { "en": "Score" } },
+          { "name": "timestamp", "type": "number", "title": { "en": "Timestamp" } },
+          { "name": "raw_json", "type": "string", "title": { "en": "Raw JSON" } }
+        ]
+      },
+      {
+        "id": "license_plate_recognized",
+        "title": { "en": "License plate recognized" },
+        "titleFormatted": { "en": "License plate [[plate]] recognized on [[camera]] named [[name]] with score at least [[min_score]]" },
+        "args": [
+          { "name": "camera", "type": "text", "title": { "en": "Camera" }, "placeholder": { "en": "Leave empty for any camera" }, "required": false },
+          { "name": "plate", "type": "text", "title": { "en": "Plate" }, "placeholder": { "en": "Leave empty for any plate" }, "required": false },
+          { "name": "name", "type": "text", "title": { "en": "Name" }, "placeholder": { "en": "Leave empty for any name" }, "required": false },
+          { "name": "min_score", "type": "number", "title": { "en": "Minimum score" }, "min": 0, "max": 1, "step": 0.01, "placeholder": { "en": "0" }, "required": false }
+        ],
+        "tokens": [
+          { "name": "id", "type": "string", "title": { "en": "Object/Event ID" } },
+          { "name": "camera", "type": "string", "title": { "en": "Camera" } },
+          { "name": "plate", "type": "string", "title": { "en": "Plate" } },
+          { "name": "name", "type": "string", "title": { "en": "Name" } },
+          { "name": "score", "type": "number", "title": { "en": "Score" } },
+          { "name": "timestamp", "type": "number", "title": { "en": "Timestamp" } },
+          { "name": "raw_json", "type": "string", "title": { "en": "Raw JSON" } }
+        ]
+      },
+      {
+        "id": "review_started",
+        "title": { "en": "Review started" },
+        "titleFormatted": { "en": "[[severity]] review started on [[camera]] with object [[object]] in zone [[zone]]" },
+        "args": [
+          { "name": "severity", "type": "dropdown", "title": { "en": "Severity" }, "values": [ { "id": "any", "label": { "en": "Any" } }, { "id": "detection", "label": { "en": "Detection" } }, { "id": "alert", "label": { "en": "Alert" } } ] },
+          { "name": "camera", "type": "text", "title": { "en": "Camera" }, "placeholder": { "en": "Leave empty for any camera" }, "required": false },
+          { "name": "object", "type": "text", "title": { "en": "Object contains" }, "placeholder": { "en": "person" }, "required": false },
+          { "name": "zone", "type": "text", "title": { "en": "Zone contains" }, "placeholder": { "en": "front_yard" }, "required": false }
+        ],
+        "tokens": [
+          { "name": "review_id", "type": "string", "title": { "en": "Review ID" } },
+          { "name": "review_type", "type": "string", "title": { "en": "Review Type" } },
+          { "name": "camera", "type": "string", "title": { "en": "Camera" } },
+          { "name": "severity", "type": "string", "title": { "en": "Severity" } },
+          { "name": "start_time", "type": "number", "title": { "en": "Start Time" } },
+          { "name": "end_time", "type": "number", "title": { "en": "End Time" } },
+          { "name": "objects", "type": "string", "title": { "en": "Objects" } },
+          { "name": "verified_objects", "type": "string", "title": { "en": "Verified Objects" } },
+          { "name": "sub_labels", "type": "string", "title": { "en": "Sub Labels" } },
+          { "name": "zones", "type": "string", "title": { "en": "Zones" } },
+          { "name": "audio", "type": "string", "title": { "en": "Audio" } },
+          { "name": "detection_ids", "type": "string", "title": { "en": "Detection IDs" } },
+          { "name": "thumb_path", "type": "string", "title": { "en": "Thumbnail Path" } },
+          { "name": "thumb_time", "type": "number", "title": { "en": "Thumbnail Time" } },
+          { "name": "raw_json", "type": "string", "title": { "en": "Raw JSON" } }
+        ]
+      },
+      {
+        "id": "review_became_alert",
+        "title": { "en": "Review became alert" },
+        "titleFormatted": { "en": "Review became alert on [[camera]] with object [[object]] in zone [[zone]]" },
+        "args": [
+          { "name": "camera", "type": "text", "title": { "en": "Camera" }, "placeholder": { "en": "Leave empty for any camera" }, "required": false },
+          { "name": "object", "type": "text", "title": { "en": "Object contains" }, "placeholder": { "en": "person" }, "required": false },
+          { "name": "zone", "type": "text", "title": { "en": "Zone contains" }, "placeholder": { "en": "front_yard" }, "required": false }
+        ],
+        "tokens": [
+          { "name": "review_id", "type": "string", "title": { "en": "Review ID" } },
+          { "name": "review_type", "type": "string", "title": { "en": "Review Type" } },
+          { "name": "camera", "type": "string", "title": { "en": "Camera" } },
+          { "name": "severity", "type": "string", "title": { "en": "Severity" } },
+          { "name": "start_time", "type": "number", "title": { "en": "Start Time" } },
+          { "name": "end_time", "type": "number", "title": { "en": "End Time" } },
+          { "name": "objects", "type": "string", "title": { "en": "Objects" } },
+          { "name": "verified_objects", "type": "string", "title": { "en": "Verified Objects" } },
+          { "name": "sub_labels", "type": "string", "title": { "en": "Sub Labels" } },
+          { "name": "zones", "type": "string", "title": { "en": "Zones" } },
+          { "name": "audio", "type": "string", "title": { "en": "Audio" } },
+          { "name": "detection_ids", "type": "string", "title": { "en": "Detection IDs" } },
+          { "name": "thumb_path", "type": "string", "title": { "en": "Thumbnail Path" } },
+          { "name": "thumb_time", "type": "number", "title": { "en": "Thumbnail Time" } },
+          { "name": "raw_json", "type": "string", "title": { "en": "Raw JSON" } }
+        ]
+      },
+      {
+        "id": "review_ended",
+        "title": { "en": "Review ended" },
+        "titleFormatted": { "en": "[[severity]] review ended on [[camera]] with object [[object]] in zone [[zone]]" },
+        "args": [
+          { "name": "severity", "type": "dropdown", "title": { "en": "Severity" }, "values": [ { "id": "any", "label": { "en": "Any" } }, { "id": "detection", "label": { "en": "Detection" } }, { "id": "alert", "label": { "en": "Alert" } } ] },
+          { "name": "camera", "type": "text", "title": { "en": "Camera" }, "placeholder": { "en": "Leave empty for any camera" }, "required": false },
+          { "name": "object", "type": "text", "title": { "en": "Object contains" }, "placeholder": { "en": "person" }, "required": false },
+          { "name": "zone", "type": "text", "title": { "en": "Zone contains" }, "placeholder": { "en": "front_yard" }, "required": false }
+        ],
+        "tokens": [
+          { "name": "review_id", "type": "string", "title": { "en": "Review ID" } },
+          { "name": "review_type", "type": "string", "title": { "en": "Review Type" } },
+          { "name": "camera", "type": "string", "title": { "en": "Camera" } },
+          { "name": "severity", "type": "string", "title": { "en": "Severity" } },
+          { "name": "start_time", "type": "number", "title": { "en": "Start Time" } },
+          { "name": "end_time", "type": "number", "title": { "en": "End Time" } },
+          { "name": "objects", "type": "string", "title": { "en": "Objects" } },
+          { "name": "verified_objects", "type": "string", "title": { "en": "Verified Objects" } },
+          { "name": "sub_labels", "type": "string", "title": { "en": "Sub Labels" } },
+          { "name": "zones", "type": "string", "title": { "en": "Zones" } },
+          { "name": "audio", "type": "string", "title": { "en": "Audio" } },
+          { "name": "detection_ids", "type": "string", "title": { "en": "Detection IDs" } },
+          { "name": "thumb_path", "type": "string", "title": { "en": "Thumbnail Path" } },
+          { "name": "thumb_time", "type": "number", "title": { "en": "Thumbnail Time" } },
+          { "name": "raw_json", "type": "string", "title": { "en": "Raw JSON" } }
+        ]
+      },
+      {
+        "id": "review_genai_ready",
+        "title": { "en": "Review AI summary ready" },
+        "titleFormatted": { "en": "AI summary ready for [[camera]] with [[severity]], object [[object]], zone [[zone]], confidence [[min_confidence]], threat [[min_threat_level]] to [[max_threat_level]]" },
+        "args": [
+          { "name": "severity", "type": "dropdown", "title": { "en": "Severity" }, "values": [ { "id": "any", "label": { "en": "Any" } }, { "id": "detection", "label": { "en": "Detection" } }, { "id": "alert", "label": { "en": "Alert" } } ] },
+          { "name": "camera", "type": "text", "title": { "en": "Camera" }, "placeholder": { "en": "Leave empty for any camera" }, "required": false },
+          { "name": "object", "type": "text", "title": { "en": "Object contains" }, "placeholder": { "en": "person" }, "required": false },
+          { "name": "zone", "type": "text", "title": { "en": "Zone contains" }, "placeholder": { "en": "front_yard" }, "required": false },
+          { "name": "min_confidence", "type": "number", "title": { "en": "Minimum confidence" }, "min": 0, "max": 1, "step": 0.01, "placeholder": { "en": "0" }, "required": false },
+          { "name": "min_threat_level", "type": "number", "title": { "en": "Minimum threat level" }, "min": 0, "max": 10, "step": 1, "placeholder": { "en": "0" }, "required": false },
+          { "name": "max_threat_level", "type": "number", "title": { "en": "Maximum threat level" }, "min": 0, "max": 10, "step": 1, "placeholder": { "en": "10" }, "required": false }
+        ],
+        "tokens": [
+          { "name": "review_id", "type": "string", "title": { "en": "Review ID" } },
+          { "name": "review_type", "type": "string", "title": { "en": "Review Type" } },
+          { "name": "camera", "type": "string", "title": { "en": "Camera" } },
+          { "name": "severity", "type": "string", "title": { "en": "Severity" } },
+          { "name": "start_time", "type": "number", "title": { "en": "Start Time" } },
+          { "name": "end_time", "type": "number", "title": { "en": "End Time" } },
+          { "name": "objects", "type": "string", "title": { "en": "Objects" } },
+          { "name": "verified_objects", "type": "string", "title": { "en": "Verified Objects" } },
+          { "name": "sub_labels", "type": "string", "title": { "en": "Sub Labels" } },
+          { "name": "zones", "type": "string", "title": { "en": "Zones" } },
+          { "name": "audio", "type": "string", "title": { "en": "Audio" } },
+          { "name": "detection_ids", "type": "string", "title": { "en": "Detection IDs" } },
+          { "name": "thumb_path", "type": "string", "title": { "en": "Thumbnail Path" } },
+          { "name": "thumb_time", "type": "number", "title": { "en": "Thumbnail Time" } },
+          { "name": "title", "type": "string", "title": { "en": "Title" } },
+          { "name": "scene", "type": "string", "title": { "en": "Scene" } },
+          { "name": "short_summary", "type": "string", "title": { "en": "Short Summary" } },
+          { "name": "confidence", "type": "number", "title": { "en": "Confidence" } },
+          { "name": "potential_threat_level", "type": "number", "title": { "en": "Potential Threat Level" } },
+          { "name": "other_concerns", "type": "string", "title": { "en": "Other Concerns" } },
+          { "name": "time", "type": "string", "title": { "en": "Time" } },
+          { "name": "raw_json", "type": "string", "title": { "en": "Raw JSON" } }
+        ]
+      }
+    ]
+  }
+}

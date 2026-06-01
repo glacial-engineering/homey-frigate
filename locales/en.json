@@ -1,0 +1,16 @@
+{
+  "settings": {
+    "title": "Frigate",
+    "mqtt": "MQTT",
+    "mqttProtocol": "Protocol",
+    "mqttHost": "Host",
+    "mqttPort": "Port",
+    "mqttUsername": "Username",
+    "mqttPassword": "Password",
+    "mqttClientId": "Client ID",
+    "topicPrefix": "Topic prefix",
+    "frigateBaseUrl": "Frigate base URL",
+    "save": "Save",
+    "saved": "Settings saved"
+  }
+}
