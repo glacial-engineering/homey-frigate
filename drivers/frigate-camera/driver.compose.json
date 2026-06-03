@@ -1,0 +1,13 @@
+{
+  "id": "frigate-camera",
+  "name": {
+    "en": "Frigate Camera"
+  },
+  "class": "camera",
+  "capabilities": [],
+  "images": {
+    "small": "{{driverAssetsPath}}/images/small.png",
+    "large": "{{driverAssetsPath}}/images/large.png",
+    "xlarge": "{{driverAssetsPath}}/images/xlarge.png"
+  }
+}

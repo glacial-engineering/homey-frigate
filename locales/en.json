@@ -10,6 +10,8 @@
     "mqttClientId": "Client ID",
     "topicPrefix": "Topic prefix",
     "frigateBaseUrl": "Frigate base URL",
+    "frigateUsername": "Frigate username",
+    "frigatePassword": "Frigate password",
     "save": "Save",
     "saved": "Settings saved"
   }

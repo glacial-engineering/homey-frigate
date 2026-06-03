@@ -52,6 +52,16 @@
         <label for="frigateBaseUrl" data-i18n="settings.frigateBaseUrl"></label>
         <input id="frigateBaseUrl" type="url" placeholder="http://frigate.local:5000">
       </div>
+
+      <div class="field row">
+        <label for="frigateUsername" data-i18n="settings.frigateUsername"></label>
+        <input id="frigateUsername" type="text" placeholder="">
+      </div>
+
+      <div class="field row">
+        <label for="frigatePassword" data-i18n="settings.frigatePassword"></label>
+        <input id="frigatePassword" type="password" placeholder="">
+      </div>
     </fieldset>
 
     <button id="save" class="right" data-i18n="settings.save"></button>
@@ -66,6 +76,8 @@
         'mqttClientId',
         'topicPrefix',
         'frigateBaseUrl',
+        'frigateUsername',
+        'frigatePassword',
       ];
 
       function onHomeyReady(Homey) {

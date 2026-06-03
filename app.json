@@ -25,6 +25,35 @@
     "name": "Glacial Engineering",
     "email": "github@glacial.engineering"
   },
+  "drivers": [
+    {
+      "id": "frigate-camera",
+      "name": {
+        "en": "Frigate Camera"
+      },
+      "class": "camera",
+      "capabilities": [],
+      "pair": [
+        {
+          "id": "start",
+          "navigation": {
+            "next": "list_devices"
+          }
+        },
+        {
+          "id": "list_devices",
+          "template": "list_devices",
+          "navigation": {
+            "next": "add_devices"
+          }
+        },
+        {
+          "id": "add_devices",
+          "template": "add_devices"
+        }
+      ]
+    }
+  ],
   "flow": {
     "triggers": [
       {
