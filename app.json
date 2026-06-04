@@ -226,6 +226,81 @@
         ]
       },
       {
+        "id": "event_new_label",
+        "title": { "en": "New label on event" },
+        "titleFormatted": { "en": "New label [[new_label]] on [[camera]]" },
+        "args": [
+          { "name": "camera", "type": "text", "title": { "en": "Camera" }, "placeholder": { "en": "Leave empty for any camera" }, "required": false },
+          { "name": "new_label", "type": "text", "title": { "en": "New label" }, "placeholder": { "en": "Leave empty for any label" }, "required": false }
+        ],
+        "tokens": [
+          { "name": "event_id", "type": "string", "title": { "en": "Event ID" } },
+          { "name": "event_type", "type": "string", "title": { "en": "Event Type" } },
+          { "name": "camera", "type": "string", "title": { "en": "Camera" } },
+          { "name": "current_label", "type": "string", "title": { "en": "Current Label" } },
+          { "name": "new_label", "type": "string", "title": { "en": "New Label" } },
+          { "name": "current_sub_label", "type": "string", "title": { "en": "Current Sub Label" } },
+          { "name": "new_sub_label", "type": "string", "title": { "en": "New Sub Label" } },
+          { "name": "current_top_score", "type": "number", "title": { "en": "Current Top Score" } },
+          { "name": "current_zones", "type": "string", "title": { "en": "Current Zones" } },
+          { "name": "new_zones", "type": "string", "title": { "en": "New Zones" } },
+          { "name": "current_attributes", "type": "string", "title": { "en": "Current Attributes" } },
+          { "name": "new_attributes", "type": "string", "title": { "en": "New Attributes" } },
+          { "name": "raw_json", "type": "string", "title": { "en": "Raw JSON" } }
+        ]
+      },
+      {
+        "id": "event_new_sub_label",
+        "title": { "en": "New sub-label on event" },
+        "titleFormatted": { "en": "New sub-label [[new_sub_label]] on [[camera]]" },
+        "args": [
+          { "name": "camera", "type": "text", "title": { "en": "Camera" }, "placeholder": { "en": "Leave empty for any camera" }, "required": false },
+          { "name": "new_sub_label", "type": "text", "title": { "en": "New sub-label" }, "placeholder": { "en": "Leave empty for any sub-label" }, "required": false }
+        ],
+        "tokens": [
+          { "name": "event_id", "type": "string", "title": { "en": "Event ID" } },
+          { "name": "event_type", "type": "string", "title": { "en": "Event Type" } },
+          { "name": "camera", "type": "string", "title": { "en": "Camera" } },
+          { "name": "current_label", "type": "string", "title": { "en": "Current Label" } },
+          { "name": "new_label", "type": "string", "title": { "en": "New Label" } },
+          { "name": "current_sub_label", "type": "string", "title": { "en": "Current Sub Label" } },
+          { "name": "new_sub_label", "type": "string", "title": { "en": "New Sub Label" } },
+          { "name": "current_top_score", "type": "number", "title": { "en": "Current Top Score" } },
+          { "name": "current_zones", "type": "string", "title": { "en": "Current Zones" } },
+          { "name": "new_zones", "type": "string", "title": { "en": "New Zones" } },
+          { "name": "current_attributes", "type": "string", "title": { "en": "Current Attributes" } },
+          { "name": "new_attributes", "type": "string", "title": { "en": "New Attributes" } },
+          { "name": "raw_json", "type": "string", "title": { "en": "Raw JSON" } }
+        ]
+      },
+      {
+        "id": "review_contains_all",
+        "title": { "en": "A review contains all" },
+        "titleFormatted": { "en": "A review contains all on [[camera]] with labels [[labels]] and sub-labels [[sub_labels]]" },
+        "args": [
+          { "name": "camera", "type": "text", "title": { "en": "Camera" }, "placeholder": { "en": "Leave empty for any camera" }, "required": false },
+          { "name": "labels", "type": "text", "title": { "en": "Labels" }, "placeholder": { "en": "person,car,dog" }, "required": false },
+          { "name": "sub_labels", "type": "text", "title": { "en": "Sub-labels" }, "placeholder": { "en": "John,Mary" }, "required": false }
+        ],
+        "tokens": [
+          { "name": "review_id", "type": "string", "title": { "en": "Review ID" } },
+          { "name": "review_type", "type": "string", "title": { "en": "Review Type" } },
+          { "name": "camera", "type": "string", "title": { "en": "Camera" } },
+          { "name": "severity", "type": "string", "title": { "en": "Severity" } },
+          { "name": "start_time", "type": "number", "title": { "en": "Start Time" } },
+          { "name": "end_time", "type": "number", "title": { "en": "End Time" } },
+          { "name": "objects", "type": "string", "title": { "en": "Objects" } },
+          { "name": "verified_objects", "type": "string", "title": { "en": "Verified Objects" } },
+          { "name": "sub_labels", "type": "string", "title": { "en": "Sub Labels" } },
+          { "name": "zones", "type": "string", "title": { "en": "Zones" } },
+          { "name": "audio", "type": "string", "title": { "en": "Audio" } },
+          { "name": "detection_ids", "type": "string", "title": { "en": "Detection IDs" } },
+          { "name": "thumb_path", "type": "string", "title": { "en": "Thumbnail Path" } },
+          { "name": "thumb_time", "type": "number", "title": { "en": "Thumbnail Time" } },
+          { "name": "raw_json", "type": "string", "title": { "en": "Raw JSON" } }
+        ]
+      },
+      {
         "id": "review_genai_ready",
         "title": { "en": "Review AI summary ready" },
         "titleFormatted": { "en": "AI summary ready for [[camera]] with [[severity]], object [[object]], zone [[zone]], confidence [[min_confidence]], threat [[min_threat_level]] to [[max_threat_level]]" },

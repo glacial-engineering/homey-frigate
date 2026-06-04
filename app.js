@@ -14,6 +14,9 @@ class FrigateApp extends Homey.App {
       reviewBecameAlert: this.homey.flow.getTriggerCard('review_became_alert'),
       reviewEnded: this.homey.flow.getTriggerCard('review_ended'),
       reviewGenaiReady: this.homey.flow.getTriggerCard('review_genai_ready'),
+      eventNewLabel: this.homey.flow.getTriggerCard('event_new_label'),
+      eventNewSubLabel: this.homey.flow.getTriggerCard('event_new_sub_label'),
+      reviewContainsAll: this.homey.flow.getTriggerCard('review_contains_all'),
     };
 
     this.registerTriggerListeners();
@@ -57,6 +60,42 @@ class FrigateApp extends Homey.App {
         && state.potential_threat_level >= this.numberOrDefault(args.min_threat_level, 0)
         && state.potential_threat_level <= this.numberOrDefault(args.max_threat_level, 10);
     });
+
+    this.cards.eventNewLabel.registerRunListener(async (args, state) => {
+      return this.matchesTextFilter(args.camera, state.camera)
+        && this.matchesTextFilter(args.new_label, state.new_label);
+    });
+
+    this.cards.eventNewSubLabel.registerRunListener(async (args, state) => {
+      return this.matchesTextFilter(args.camera, state.camera)
+        && this.matchesTextFilter(args.new_sub_label, state.new_sub_label);
+    });
+
+    this.cards.reviewContainsAll.registerRunListener(async (args, state) => {
+      if (!this.matchesTextFilter(args.camera, state.camera)) return false;
+
+      const requiredLabels = this.parseCommaList(args.labels);
+      const requiredSubLabels = this.parseCommaList(args.sub_labels);
+
+      if (requiredLabels.length === 0 && requiredSubLabels.length === 0) return false;
+
+      const afterObjects = state.after_objects || [];
+      const afterSubLabels = state.after_sub_labels || [];
+      const beforeObjects = state.before_objects || [];
+      const beforeSubLabels = state.before_sub_labels || [];
+
+      const allLabelsPresent = requiredLabels.every((l) => afterObjects.includes(l));
+      const allSubLabelsPresent = requiredSubLabels.every((l) => afterSubLabels.includes(l));
+
+      if (!allLabelsPresent || !allSubLabelsPresent) return false;
+
+      if (state.review_type === 'new') return true;
+
+      const labelsNewlyAdded = requiredLabels.some((l) => !beforeObjects.includes(l));
+      const subLabelsNewlyAdded = requiredSubLabels.some((l) => !beforeSubLabels.includes(l));
+
+      return labelsNewlyAdded || subLabelsNewlyAdded;
+    });
   }
 
   connectMqtt() {
@@ -73,9 +112,6 @@ class FrigateApp extends Homey.App {
       clean: true,
       reconnectPeriod: 10000,
     };
-
-    if (settings.username) options.username = settings.username;
-    if (settings.password) options.password = settings.password;
 
     this.log(`Connecting to MQTT broker ${url}`);
     this.mqttClient = mqtt.connect(url, options);
@@ -102,6 +138,7 @@ class FrigateApp extends Homey.App {
   subscribeFrigateTopics() {
     const prefix = this.getTopicPrefix();
     const topics = [
+      `${prefix}/events`,
       `${prefix}/tracked_object_update`,
       `${prefix}/reviews`,
     ];
@@ -124,6 +161,11 @@ class FrigateApp extends Homey.App {
       payload = JSON.parse(message.toString());
     } catch (err) {
       this.error(`Failed to parse MQTT payload for topic ${topic}: ${err.message}`);
+      return;
+    }
+
+    if (topic === `${prefix}/events`) {
+      this.handleEvent(payload);
       return;
     }
 
@@ -184,7 +226,10 @@ class FrigateApp extends Homey.App {
       this.cards.reviewStarted.trigger(tokens, state).catch((err) => this.error(err));
     }
 
-    if (payload.type === 'update' && payload.before?.severity !== 'alert' && payload.after?.severity === 'alert') {
+    const isNewAlert = payload.type === 'new' && payload.after?.severity === 'alert';
+    const isEscalatedAlert = payload.type === 'update' && payload.before?.severity !== 'alert' && payload.after?.severity === 'alert';
+
+    if (isNewAlert || isEscalatedAlert) {
       this.cards.reviewBecameAlert.trigger(tokens, state).catch((err) => this.error(err));
     }
 
@@ -195,6 +240,99 @@ class FrigateApp extends Homey.App {
     if (payload.type === 'genai' && payload.after?.data?.metadata) {
       this.cards.reviewGenaiReady.trigger(tokens, state).catch((err) => this.error(err));
     }
+
+    if (['new', 'update', 'end'].includes(payload.type)) {
+      const reviewState = {
+        ...state,
+        before_objects: this.arrayValue(payload.before?.data?.objects),
+        after_objects: this.arrayValue(payload.after?.data?.objects),
+        before_sub_labels: this.arrayValue(payload.before?.data?.sub_labels),
+        after_sub_labels: this.arrayValue(payload.after?.data?.sub_labels),
+      };
+      this.cards.reviewContainsAll.trigger(tokens, reviewState).catch((err) => this.error(err));
+    }
+  }
+
+  handleEvent(payload) {
+    const tokens = this.normalizeEventTokens(payload);
+    const state = { ...tokens };
+
+    if (tokens.new_label) {
+      this.cards.eventNewLabel.trigger(tokens, state).catch((err) => this.error(err));
+    }
+
+    if (tokens.new_sub_label) {
+      this.cards.eventNewSubLabel.trigger(tokens, state).catch((err) => this.error(err));
+    }
+  }
+
+  normalizeEventTokens(payload) {
+    const before = payload.before || {};
+    const after = payload.after || {};
+    const eventType = this.stringValue(payload.type);
+
+    const currentLabel = this.stringValue(after.label);
+    const currentSubLabel = this.extractSubLabel(after.sub_label);
+    const currentZones = this.joinValues(after.current_zones);
+    const currentAttributes = this.joinValues((after.current_attributes || []).map((a) => a.label));
+
+    const newLabel = this.computeNewValue(eventType, before.label, after.label);
+    const newSubLabel = this.computeNewSubLabel(eventType, before.sub_label, after.sub_label);
+    const newZones = this.computeNewArray(eventType, before.current_zones, after.current_zones);
+    const newAttributes = this.computeNewAttributes(eventType, before.current_attributes, after.current_attributes);
+
+    return {
+      event_id: this.stringValue(after.id),
+      event_type: eventType,
+      camera: this.stringValue(after.camera),
+      current_label: currentLabel,
+      new_label: newLabel,
+      current_sub_label: currentSubLabel,
+      new_sub_label: newSubLabel,
+      current_top_score: this.numberOrDefault(after.top_score, 0),
+      current_zones: currentZones,
+      new_zones: newZones,
+      current_attributes: currentAttributes,
+      new_attributes: newAttributes,
+      raw_json: JSON.stringify(payload),
+    };
+  }
+
+  computeNewValue(eventType, beforeValue, afterValue) {
+    if (eventType === 'new') return this.stringValue(afterValue);
+    const before = this.stringValue(beforeValue);
+    const after = this.stringValue(afterValue);
+    return after && after !== before ? after : '';
+  }
+
+  computeNewSubLabel(eventType, beforeValue, afterValue) {
+    if (eventType === 'new') return this.extractSubLabel(afterValue);
+    const before = this.extractSubLabel(beforeValue);
+    const after = this.extractSubLabel(afterValue);
+    return after && after !== before ? after : '';
+  }
+
+  computeNewArray(eventType, beforeValue, afterValue) {
+    const afterArr = Array.isArray(afterValue) ? afterValue : [];
+    if (eventType === 'new') return this.joinValues(afterArr);
+    const beforeArr = Array.isArray(beforeValue) ? beforeValue : [];
+    const beforeSet = new Set(beforeArr);
+    const added = afterArr.filter((item) => !beforeSet.has(item));
+    return this.joinValues(added);
+  }
+
+  computeNewAttributes(eventType, beforeValue, afterValue) {
+    const afterArr = Array.isArray(afterValue) ? afterValue : [];
+    if (eventType === 'new') return this.joinValues(afterArr.map((a) => a.label));
+    const beforeArr = Array.isArray(beforeValue) ? beforeValue : [];
+    const beforeSet = new Set(beforeArr.map((a) => a.label));
+    const added = afterArr.filter((a) => !beforeSet.has(a.label));
+    return this.joinValues(added.map((a) => a.label));
+  }
+
+  extractSubLabel(value) {
+    if (Array.isArray(value) && value.length > 0) return this.stringValue(value[0]);
+    return this.stringValue(value);
   }
 
   normalizeTrackedObjectTokens(payload) {
@@ -271,8 +409,6 @@ class FrigateApp extends Homey.App {
       protocol,
       host,
       port: this.homey.settings.get('mqttPort') || defaultPort,
-      username: this.homey.settings.get('mqttUsername') || '',
-      password: this.homey.settings.get('mqttPassword') || '',
       clientId: this.homey.settings.get('mqttClientId') || `homey-frigate-${Math.random().toString(16).slice(2)}`,
     };
   }
@@ -286,8 +422,6 @@ class FrigateApp extends Homey.App {
       'mqttProtocol',
       'mqttHost',
       'mqttPort',
-      'mqttUsername',
-      'mqttPassword',
       'mqttClientId',
       'topicPrefix',
     ].includes(key);
@@ -318,6 +452,16 @@ class FrigateApp extends Homey.App {
   numberOrDefault(value, defaultValue) {
     const number = Number(value);
     return Number.isFinite(number) ? number : defaultValue;
+  }
+
+  parseCommaList(value) {
+    if (!value) return [];
+    return this.stringValue(value).split(',').map((s) => s.trim().toLowerCase()).filter((s) => s.length > 0);
+  }
+
+  arrayValue(value) {
+    if (Array.isArray(value)) return value.map((v) => this.stringValue(v).toLowerCase());
+    return [];
   }
 }
 
