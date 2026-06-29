@@ -339,7 +339,7 @@
         ]
       },
       {
-        "id": "doorbell_pressed",
+        "id": "doorbell_press",
         "title": { "en": "Doorbell pressed" },
         "titleFormatted": { "en": "Doorbell pressed" },
         "hint": { "en": "Fires the instant the doorbell button is pushed." },

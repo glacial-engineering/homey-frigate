@@ -17,7 +17,7 @@ class FrigateApp extends Homey.App {
       eventNewLabel: this.homey.flow.getTriggerCard('event_new_label'),
       eventNewSubLabel: this.homey.flow.getTriggerCard('event_new_sub_label'),
       reviewContainsAll: this.homey.flow.getTriggerCard('review_contains_all'),
-      doorbellPressed: this.homey.flow.getTriggerCard('doorbell_pressed'),
+      doorbellPress: this.homey.flow.getTriggerCard('doorbell_press'),
       doorbellUnanswered: this.homey.flow.getTriggerCard('doorbell_unanswered'),
     };
 
@@ -143,8 +143,8 @@ class FrigateApp extends Homey.App {
       `${prefix}/events`,
       `${prefix}/tracked_object_update`,
       `${prefix}/reviews`,
-      `${prefix}/doorbell/press_instant`,
       `${prefix}/doorbell/press`,
+      `${prefix}/doorbell/press_unanswered`,
     ];
 
     this.mqttClient.subscribe(topics, (err) => {
@@ -163,7 +163,7 @@ class FrigateApp extends Homey.App {
     // Doorbell topics carry a plain "ON"/"OFF" string, not JSON. Handle them
     // before the JSON.parse below, and only act on the leading "ON" edge so the
     // trailing "OFF" reset pulse does not fire the trigger a second time.
-    if (topic === `${prefix}/doorbell/press_instant` || topic === `${prefix}/doorbell/press`) {
+    if (topic === `${prefix}/doorbell/press` || topic === `${prefix}/doorbell/press_unanswered`) {
       this.handleDoorbell(topic, message.toString().trim());
       return;
     }
@@ -283,9 +283,9 @@ class FrigateApp extends Homey.App {
     if (value.toUpperCase() !== 'ON') return; // ignore the OFF reset pulse
 
     const tokens = { pressed_at: Date.now() };
-    const card = topic.endsWith('/press_instant')
-      ? this.cards.doorbellPressed
-      : this.cards.doorbellUnanswered;
+    const card = topic.endsWith('/press_unanswered')
+      ? this.cards.doorbellUnanswered
+      : this.cards.doorbellPress;
 
     card.trigger(tokens, {}).catch((err) => this.error(err));
   }
