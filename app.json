@@ -337,6 +337,24 @@
           { "name": "time", "type": "string", "title": { "en": "Time" } },
           { "name": "raw_json", "type": "string", "title": { "en": "Raw JSON" } }
         ]
+      },
+      {
+        "id": "doorbell_pressed",
+        "title": { "en": "Doorbell pressed" },
+        "titleFormatted": { "en": "Doorbell pressed" },
+        "hint": { "en": "Fires the instant the doorbell button is pushed." },
+        "tokens": [
+          { "name": "pressed_at", "type": "number", "title": { "en": "Pressed At (epoch ms)" } }
+        ]
+      },
+      {
+        "id": "doorbell_unanswered",
+        "title": { "en": "Doorbell rang unanswered" },
+        "titleFormatted": { "en": "Doorbell rang unanswered" },
+        "hint": { "en": "Fires when the doorbell rings out without being answered (~30s after the press)." },
+        "tokens": [
+          { "name": "pressed_at", "type": "number", "title": { "en": "Rang At (epoch ms)" } }
+        ]
       }
     ]
   }

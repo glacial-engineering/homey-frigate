@@ -10,6 +10,7 @@ Athom Homey app that subscribes to Frigate MQTT messages and exposes trigger Flo
 - Subscribes to `frigate/events`
 - Subscribes to `frigate/tracked_object_update`
 - Subscribes to `frigate/reviews`
+- Subscribes to `frigate/doorbell/press_instant` and `frigate/doorbell/press` (custom doorbell topics — see [Doorbell](#doorbell))
 - Trigger cards for event labels and sub-labels, object descriptions, face recognition, license plates, review starts, review alert escalation, review ends, GenAI review summaries, and review label matching
 
 ## Settings
@@ -39,6 +40,22 @@ Athom Homey app that subscribes to Frigate MQTT messages and exposes trigger Flo
 - Review ended
 - Review AI summary ready
 - A review contains all — fires once when a review's objects and sub-labels contain all specified items, and at least one was newly added
+
+### Doorbell
+
+- Doorbell pressed — fires the instant the doorbell button is pushed
+- Doorbell rang unanswered — fires when the doorbell rings out without being answered
+
+> **Note:** Frigate core does **not** publish a doorbell button-press event — it uses ONVIF only for PTZ. These two cards are driven by topics you publish yourself (e.g. from a small bridge that listens to your doorbell's native event API and republishes to MQTT). This app only subscribes; it does not produce these topics.
+
+Expected topics and payloads (both default-prefixed with the configured topic prefix, `frigate`):
+
+| Topic | Fires card | Payload |
+| --- | --- | --- |
+| `frigate/doorbell/press_instant` | Doorbell pressed | `ON` (an `OFF` reset may follow and is ignored) |
+| `frigate/doorbell/press` | Doorbell rang unanswered | `ON` (an `OFF` reset may follow and is ignored) |
+
+Only the `ON` edge fires a trigger, so each press produces exactly one Flow run. Both cards expose a `pressed_at` token (epoch milliseconds).
 
 ## Development
 
