@@ -19,7 +19,10 @@ class FrigateApp extends Homey.App {
       reviewContainsAll: this.homey.flow.getTriggerCard('review_contains_all'),
       doorbellPress: this.homey.flow.getTriggerCard('doorbell_press'),
       doorbellUnanswered: this.homey.flow.getTriggerCard('doorbell_unanswered'),
+      stateClassificationChanged: this.homey.flow.getTriggerCard('state_classification_changed'),
     };
+
+    this.classificationStates = {};
 
     this.registerTriggerListeners();
     this.connectMqtt();
@@ -98,6 +101,12 @@ class FrigateApp extends Homey.App {
 
       return labelsNewlyAdded || subLabelsNewlyAdded;
     });
+
+    this.cards.stateClassificationChanged.registerRunListener(async (args, state) => {
+      return this.matchesTextFilter(args.camera, state.camera)
+        && this.matchesTextFilter(args.model, state.model)
+        && this.matchesTextFilter(args.state, state.state);
+    });
   }
 
   connectMqtt() {
@@ -145,6 +154,7 @@ class FrigateApp extends Homey.App {
       `${prefix}/reviews`,
       `${prefix}/doorbell/press`,
       `${prefix}/doorbell/press_unanswered`,
+      `${prefix}/+/classification/+`,
     ];
 
     this.mqttClient.subscribe(topics, (err) => {
@@ -165,6 +175,14 @@ class FrigateApp extends Homey.App {
     // trailing "OFF" reset pulse does not fire the trigger a second time.
     if (topic === `${prefix}/doorbell/press` || topic === `${prefix}/doorbell/press_unanswered`) {
       this.handleDoorbell(topic, message.toString().trim());
+      return;
+    }
+
+    // Classification topics are frigate/<camera>/classification/<model> with a
+    // plain state-name payload (e.g. "open"), not JSON. Match before JSON.parse.
+    const classificationMatch = topic.match(new RegExp(`^${this.escapeRegExp(prefix)}/([^/]+)/classification/([^/]+)$`));
+    if (classificationMatch) {
+      this.handleStateClassification(classificationMatch[1], classificationMatch[2], message.toString().trim());
       return;
     }
 
@@ -288,6 +306,27 @@ class FrigateApp extends Homey.App {
       : this.cards.doorbellPress;
 
     card.trigger(tokens, {}).catch((err) => this.error(err));
+  }
+
+  handleStateClassification(camera, model, state) {
+    if (!state) return;
+
+    const key = `${camera}/${model}`;
+    const previousState = this.classificationStates[key] || '';
+    this.classificationStates[key] = state;
+
+    const tokens = {
+      camera,
+      model,
+      state,
+      previous_state: previousState,
+    };
+
+    this.cards.stateClassificationChanged.trigger(tokens, tokens).catch((err) => this.error(err));
+  }
+
+  escapeRegExp(value) {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
   normalizeEventTokens(payload) {

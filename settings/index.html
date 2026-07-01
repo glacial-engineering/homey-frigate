@@ -45,6 +45,15 @@
 
     </fieldset>
 
+    <fieldset>
+      <legend data-i18n="settings.liveView"></legend>
+
+      <div class="field row">
+        <label for="frigateRtspPort" data-i18n="settings.frigateRtspPort"></label>
+        <input id="frigateRtspPort" type="number" min="1" max="65535" step="1" placeholder="8554">
+      </div>
+    </fieldset>
+
     <button id="save" class="right" data-i18n="settings.save"></button>
 
     <script type="text/javascript">
@@ -55,6 +64,7 @@
         'mqttClientId',
         'topicPrefix',
         'frigateBaseUrl',
+        'frigateRtspPort',
       ];
 
       function onHomeyReady(Homey) {

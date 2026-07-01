@@ -1,6 +1,6 @@
 # Frigate for Homey
 
-Athom Homey app that subscribes to Frigate MQTT messages and exposes trigger Flow cards for events, tracked object metadata updates, and review updates.
+Athom Homey app that subscribes to Frigate MQTT messages and exposes trigger Flow cards for events, tracked object metadata updates, and review updates. It also adds a Frigate Camera device (Homey `camera` class) with a live snapshot and RTSP live view.
 
 <img width="650" height="650" alt="image" src="https://github.com/user-attachments/assets/c2dad3d9-44d2-4721-818c-2f5c054b3b49" />
 
@@ -11,13 +11,25 @@ Athom Homey app that subscribes to Frigate MQTT messages and exposes trigger Flo
 - Subscribes to `frigate/tracked_object_update`
 - Subscribes to `frigate/reviews`
 - Subscribes to `frigate/doorbell/press` and `frigate/doorbell/press_unanswered` (custom doorbell topics — see [Doorbell](#doorbell))
-- Trigger cards for event labels and sub-labels, object descriptions, face recognition, license plates, review starts, review alert escalation, review ends, GenAI review summaries, and review label matching
+- Subscribes to `frigate/+/classification/+` (state classification models — see [State classification](#state-classification))
+- Trigger cards for event labels and sub-labels, object descriptions, face recognition, license plates, review starts, review alert escalation, review ends, GenAI review summaries, review label matching, and state classification changes
+- Frigate Camera device with snapshot image and RTSP live view (see [Camera device](#camera-device))
 
 ## Settings
 
 - MQTT protocol, host, port, and client ID
 - Frigate topic prefix, default `frigate`
-- Frigate base URL, used to turn relative thumbnail paths into full URLs
+- Frigate base URL, used to turn relative thumbnail paths into full URLs and to fetch snapshots/discover cameras
+- go2rtc RTSP restream port, default `8554` (Frigate's live-view restream port, separate from the base URL's HTTP API port)
+
+## Camera device
+
+Pairing discovers cameras from Frigate's `/api/config`, then asks you to pick which of that camera's `live.streams` entries (as configured in Frigate, e.g. "Main Stream", "Sub Stream", "Two-Way Stream") backs the Homey live view — the exact go2rtc stream name is never guessed, since it commonly doesn't match the camera's own name (e.g. `cam1_main` for a camera named `front`).
+
+- **Snapshot**: fetched from `<frigateBaseUrl>/api/<camera>/latest.jpg`.
+- **Live view**: RTSP pulled from `rtsp://<frigateBaseUrl host>:<frigateRtspPort>/<go2rtc stream name>`. Homey proxies this to WebRTC for the mobile/web app automatically.
+- **Changing the stream later**: open the device's Advanced Settings and edit the "Live stream (go2rtc name)" text field. There is no repair flow for this — see [AGENTS.md](AGENTS.md) for why.
+- **Codec caveat**: Homey's video player needs H.264. If Frigate/go2rtc reports the stream as HEVC/H.265 (check with `ffprobe` against the RTSP restream, or look at the camera's own encoder settings), live view can fail in some players (e.g. desktop Firefox) even though it works fine in the Homey mobile app. Snapshot images are unaffected either way.
 
 ## Flow Cards
 
@@ -57,10 +69,20 @@ Expected topics and payloads (both default-prefixed with the configured topic pr
 
 Only the `ON` edge fires a trigger, so each press produces exactly one Flow run. Both cards expose a `pressed_at` token (epoch milliseconds).
 
+### State classification
+
+- State classification changed — fires when a Frigate state classification model publishes a new detected state for a camera
+
+Frigate publishes to `frigate/<camera_name>/classification/<model_name>` whenever a state classification model's detected state changes (it only publishes on change, not on every frame). For example, a "Delivery" model on the `doorbell` camera publishes to `frigate/doorbell/classification/Delivery` with a plain-text payload such as `delivery` or `no_delivery`.
+
+The card exposes optional `camera`, `model name`, and `state` filters (leave any blank to match anything), plus `camera`, `model`, `state`, and `previous_state` tokens.
+
 ## Development
 
 ```bash
 npm install
-homey app run --remote
 homey app validate --level debug
+homey app install
 ```
+
+See [AGENTS.md](AGENTS.md) for pairing-view pitfalls and why `homey app run` is unreliable in this environment — use `homey app install` for iterating.

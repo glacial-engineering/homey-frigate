@@ -6,7 +6,9 @@ const https = require('https');
 
 class FrigateCameraDriver extends Homey.Driver {
   async onPair(session) {
-    session.setHandler('list_devices', async () => {
+    let selectedCamera = null;
+
+    session.setHandler('list_cameras', async () => {
       const baseUrl = this.homey.settings.get('frigateBaseUrl');
 
       if (!baseUrl) {
@@ -19,13 +21,34 @@ class FrigateCameraDriver extends Homey.Driver {
         throw new Error('No cameras found. Check that the Frigate base URL is correct and Frigate is running.');
       }
 
-      return cameras.map((camera) => ({
-        name: camera,
-        data: { id: camera, cameraName: camera },
-      }));
+      return cameras;
+    });
+
+    session.setHandler('select_camera', async (cameraName) => {
+      const baseUrl = this.homey.settings.get('frigateBaseUrl');
+      const cameras = await this.discoverCameras(baseUrl);
+      const camera = cameras.find((c) => c.name === cameraName);
+
+      if (!camera) {
+        throw new Error(`Camera "${cameraName}" was not found in Frigate anymore.`);
+      }
+
+      selectedCamera = camera;
+      return camera;
+    });
+
+    session.setHandler('get_selected_camera', async () => {
+      if (!selectedCamera) {
+        throw new Error('No camera selected. Go back and pick a camera first.');
+      }
+
+      return selectedCamera;
     });
   }
 
+  /**
+   * @returns {Promise<Array<{name: string, streams: Record<string, string>}>>}
+   */
   async discoverCameras(baseUrl) {
     const normalizedUrl = baseUrl.replace(/\/$/, '');
     const configUrl = `${normalizedUrl}/api/config`;
@@ -51,7 +74,11 @@ class FrigateCameraDriver extends Homey.Driver {
 
     const cameraNames = Object.keys(cameras);
     this.log('Found cameras:', cameraNames.join(', '));
-    return cameraNames;
+
+    return cameraNames.map((name) => ({
+      name,
+      streams: cameras[name]?.live?.streams || {},
+    }));
   }
 
   async fetchJson(url) {

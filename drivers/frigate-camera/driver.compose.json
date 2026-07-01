@@ -9,5 +9,31 @@
     "small": "{{driverAssetsPath}}/images/small.png",
     "large": "{{driverAssetsPath}}/images/large.png",
     "xlarge": "{{driverAssetsPath}}/images/xlarge.png"
-  }
+  },
+  "pair": [
+    {
+      "id": "start",
+      "navigation": {
+        "next": "select_camera"
+      }
+    },
+    {
+      "id": "select_camera"
+    },
+    {
+      "id": "select_stream"
+    },
+    {
+      "id": "add_devices",
+      "template": "add_devices"
+    }
+  ],
+  "settings": [
+    {
+      "type": "text",
+      "id": "streamName",
+      "label": { "en": "Live stream (go2rtc name)" },
+      "hint": { "en": "The go2rtc stream name Frigate uses for this camera's live view, e.g. cam1_main. Check Frigate's live view page or /api/config for the exact name if you want to change it." }
+    }
+  ]
 }

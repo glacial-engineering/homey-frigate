@@ -4,6 +4,7 @@
   "compatibility": ">=5.0.0",
   "sdk": 3,
   "platforms": ["local"],
+  "platformLocalOptionalFeatures": ["camera-streaming"],
   "brandColor": "#2563EB",
   "name": {
     "en": "Frigate"
@@ -37,19 +38,26 @@
         {
           "id": "start",
           "navigation": {
-            "next": "list_devices"
+            "next": "select_camera"
           }
         },
         {
-          "id": "list_devices",
-          "template": "list_devices",
-          "navigation": {
-            "next": "add_devices"
-          }
+          "id": "select_camera"
+        },
+        {
+          "id": "select_stream"
         },
         {
           "id": "add_devices",
           "template": "add_devices"
+        }
+      ],
+      "settings": [
+        {
+          "type": "text",
+          "id": "streamName",
+          "label": { "en": "Live stream (go2rtc name)" },
+          "hint": { "en": "The go2rtc stream name Frigate uses for this camera's live view, e.g. cam1_main. Check Frigate's live view page or /api/config for the exact name if you want to change it." }
         }
       ]
     }
@@ -354,6 +362,23 @@
         "hint": { "en": "Fires when the doorbell rings out without being answered (~30s after the press)." },
         "tokens": [
           { "name": "pressed_at", "type": "number", "title": { "en": "Rang At (epoch ms)" } }
+        ]
+      },
+      {
+        "id": "state_classification_changed",
+        "title": { "en": "State classification changed" },
+        "titleFormatted": { "en": "State classification [[model]] on [[camera]] changes to [[state]]" },
+        "hint": { "en": "Fires when a Frigate state classification model publishes a new detected state, e.g. frigate/doorbell/classification/Delivery." },
+        "args": [
+          { "name": "camera", "type": "text", "title": { "en": "Camera" }, "placeholder": { "en": "Leave empty for any camera" }, "required": false },
+          { "name": "model", "type": "text", "title": { "en": "Model name" }, "placeholder": { "en": "Leave empty for any model" }, "required": false },
+          { "name": "state", "type": "text", "title": { "en": "State" }, "placeholder": { "en": "Leave empty for any state" }, "required": false }
+        ],
+        "tokens": [
+          { "name": "camera", "type": "string", "title": { "en": "Camera" } },
+          { "name": "model", "type": "string", "title": { "en": "Model" } },
+          { "name": "state", "type": "string", "title": { "en": "State" } },
+          { "name": "previous_state", "type": "string", "title": { "en": "Previous State" } }
         ]
       }
     ]

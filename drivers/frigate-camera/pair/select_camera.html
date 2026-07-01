@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 24px;
+    }
+    h2 { margin-top: 0; }
+    p.hint { color: #666; }
+    p.error { color: #c00; }
+    ul { list-style: none; margin: 0; padding: 0; }
+    li.row {
+      display: block;
+      width: 100%;
+      padding: 16px;
+      margin: 8px 0;
+      font-size: 16px;
+      border: 1px solid #007aff;
+      color: #007aff;
+      border-radius: 8px;
+      cursor: pointer;
+      box-sizing: border-box;
+    }
+    li.row:hover { background: #eaf3ff; }
+  </style>
+</head>
+<body>
+  <h2>Select a camera</h2>
+  <p class="hint" id="hint">Loading cameras from Frigate&hellip;</p>
+  <ul id="cameras"></ul>
+
+  <script type="text/javascript">
+    const hint = document.getElementById('hint');
+    const list = document.getElementById('cameras');
+
+    Homey.emit('list_cameras')
+      .then((cameras) => {
+        hint.textContent = 'Cameras found in Frigate:';
+
+        cameras.forEach((camera) => {
+          const item = document.createElement('li');
+          item.className = 'row';
+          item.textContent = camera.name;
+          item.addEventListener('click', () => {
+            Homey.emit('select_camera', camera.name)
+              .then(() => Homey.showView('select_stream'));
+          });
+          list.appendChild(item);
+        });
+
+        if (cameras.length === 0) {
+          hint.textContent = 'No cameras found.';
+          hint.className = 'error';
+        }
+      })
+      .catch((err) => {
+        hint.textContent = err.message || String(err);
+        hint.className = 'error';
+      });
+  </script>
+</body>
+</html>
