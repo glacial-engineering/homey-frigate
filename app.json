@@ -26,6 +26,12 @@
     "name": "Glacial Engineering",
     "email": "github@glacial.engineering"
   },
+  "source": "https://github.com/glacial-engineering/homey-frigate",
+  "homepage": "https://github.com/glacial-engineering/homey-frigate",
+  "bugs": {
+    "url": "https://github.com/glacial-engineering/homey-frigate/issues"
+  },
+  "support": "mailto:github@glacial.engineering",
   "drivers": [
     {
       "id": "frigate-camera",
@@ -33,6 +39,11 @@
         "en": "Frigate Camera"
       },
       "class": "camera",
+      "images": {
+        "small": "/drivers/frigate-camera/assets/images/small.png",
+        "large": "/drivers/frigate-camera/assets/images/large.png",
+        "xlarge": "/drivers/frigate-camera/assets/images/xlarge.png"
+      },
       "capabilities": [],
       "pair": [
         {
