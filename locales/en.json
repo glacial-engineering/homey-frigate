@@ -1,6 +1,7 @@
 {
   "settings": {
     "title": "Frigate",
+    "intro": "Connect to your MQTT broker and Frigate instance to enable Flow cards and the camera device.",
     "mqtt": "MQTT",
     "mqttProtocol": "Protocol",
     "mqttHost": "Host",

@@ -2,59 +2,209 @@
 <html>
   <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <script type="text/javascript" src="/homey.js" data-origin="settings"></script>
+    <style>
+      /*
+       * Homey renders this page in its own webview and applies dark mode as
+       * a post-render inversion of the surrounding app chrome — the page
+       * itself always paints in light mode and never receives
+       * prefers-color-scheme or a dark-mode class. So: light-mode-only
+       * palette, anchored on pure #fff/#000 (off-tones invert to muddy gray
+       * instead of clean black/white). Do not add a dark-mode media query.
+       */
+      :root {
+        --bg: #ffffff;
+        --surface: #ffffff;
+        --surface-soft: #f5f6f8;
+        --border: #e6e8ec;
+        --text: #000000;
+        --text-soft: #6b7280;
+        --text-faint: #9aa1ad;
+        --brand: #2563eb;
+        --brand-soft: #eaf0ff;
+        --danger: #ef4444;
+        --danger-soft: #fef2f2;
+        --radius: 14px;
+        --radius-sm: 10px;
+        --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 16px rgba(16, 24, 40, 0.06);
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        padding: 24px 18px 56px;
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        font-size: 14px;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .wrap { max-width: 720px; margin: 0 auto; }
+
+      .intro {
+        color: var(--text-soft);
+        margin: 0 0 24px;
+        font-size: 14px;
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 16px;
+        margin-bottom: 16px;
+      }
+
+      .card-title {
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+        margin: 0 0 14px;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 0;
+      }
+      .field + .field { margin-top: 14px; }
+
+      label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: var(--text-faint) !important;
+      }
+
+      select, input {
+        width: 100%;
+        height: 38px;
+        padding: 0 11px;
+        font-size: 14px;
+        color: var(--text);
+        background: var(--surface-soft);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        outline: none;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+        appearance: none;
+        -webkit-appearance: none;
+      }
+      select {
+        background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'12'%20height%3D'8'%20viewBox%3D'0%200%2012%208'%3E%3Cpath%20fill%3D'%239aa1ad'%20d%3D'M6%208L0%200h12z'%2F%3E%3C%2Fsvg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        padding-right: 30px;
+        cursor: pointer;
+      }
+      input::placeholder { color: var(--text-faint); }
+      select:focus, input:focus {
+        border-color: var(--brand);
+        background: var(--surface);
+        box-shadow: 0 0 0 3px var(--brand-soft);
+      }
+
+      .toolbar {
+        position: sticky;
+        bottom: 0;
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+        padding: 14px 0 4px;
+        background: linear-gradient(to top, var(--bg) 60%, transparent);
+      }
+
+      button.action {
+        height: 42px;
+        padding: 0 18px;
+        font-size: 14px;
+        font-weight: 600;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--surface);
+        color: var(--text);
+        cursor: pointer;
+        transition: transform 0.05s ease, background 0.15s ease, border-color 0.15s ease;
+      }
+      button.action:hover { border-color: var(--brand); color: var(--brand); }
+      button.action:active { transform: translateY(1px); }
+
+      #save {
+        margin-left: auto;
+        background: var(--brand);
+        border-color: var(--brand);
+        color: #fff;
+      }
+      #save:hover { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+
+      @media (max-width: 620px) {
+        #save { width: 100%; }
+      }
+    </style>
   </head>
   <body>
-    <h1 data-i18n="settings.title"></h1>
+    <div class="wrap">
+      <p class="intro" data-i18n="settings.intro"></p>
 
-    <fieldset>
-      <legend data-i18n="settings.mqtt"></legend>
+      <div class="card">
+        <p class="card-title" data-i18n="settings.mqtt"></p>
 
-      <div class="field row">
-        <label for="mqttProtocol" data-i18n="settings.mqttProtocol"></label>
-        <select id="mqttProtocol">
-          <option value="mqtt">mqtt</option>
-          <option value="mqtts">mqtts</option>
-        </select>
+        <div class="field">
+          <label for="mqttProtocol" data-i18n="settings.mqttProtocol"></label>
+          <select id="mqttProtocol">
+            <option value="mqtt">mqtt</option>
+            <option value="mqtts">mqtts</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="mqttHost" data-i18n="settings.mqttHost"></label>
+          <input id="mqttHost" type="text" placeholder="192.168.1.10">
+        </div>
+
+        <div class="field">
+          <label for="mqttPort" data-i18n="settings.mqttPort"></label>
+          <input id="mqttPort" type="number" min="1" max="65535" step="1" placeholder="1883">
+        </div>
+
+        <div class="field">
+          <label for="mqttClientId" data-i18n="settings.mqttClientId"></label>
+          <input id="mqttClientId" type="text" placeholder="homey-frigate">
+        </div>
+
+        <div class="field">
+          <label for="topicPrefix" data-i18n="settings.topicPrefix"></label>
+          <input id="topicPrefix" type="text" placeholder="frigate">
+        </div>
+
+        <div class="field">
+          <label for="frigateBaseUrl" data-i18n="settings.frigateBaseUrl"></label>
+          <input id="frigateBaseUrl" type="url" placeholder="http://frigate.local:5000">
+        </div>
       </div>
 
-      <div class="field row">
-        <label for="mqttHost" data-i18n="settings.mqttHost"></label>
-        <input id="mqttHost" type="text" placeholder="192.168.1.10">
+      <div class="card">
+        <p class="card-title" data-i18n="settings.liveView"></p>
+
+        <div class="field">
+          <label for="frigateRtspPort" data-i18n="settings.frigateRtspPort"></label>
+          <input id="frigateRtspPort" type="number" min="1" max="65535" step="1" placeholder="8554">
+        </div>
       </div>
 
-      <div class="field row">
-        <label for="mqttPort" data-i18n="settings.mqttPort"></label>
-        <input id="mqttPort" type="number" min="1" max="65535" step="1" placeholder="1883">
+      <div class="toolbar">
+        <button class="action" id="save" data-i18n="settings.save"></button>
       </div>
-
-      <div class="field row">
-        <label for="mqttClientId" data-i18n="settings.mqttClientId"></label>
-        <input id="mqttClientId" type="text" placeholder="homey-frigate">
-      </div>
-
-      <div class="field row">
-        <label for="topicPrefix" data-i18n="settings.topicPrefix"></label>
-        <input id="topicPrefix" type="text" placeholder="frigate">
-      </div>
-
-      <div class="field row">
-        <label for="frigateBaseUrl" data-i18n="settings.frigateBaseUrl"></label>
-        <input id="frigateBaseUrl" type="url" placeholder="http://frigate.local:5000">
-      </div>
-
-    </fieldset>
-
-    <fieldset>
-      <legend data-i18n="settings.liveView"></legend>
-
-      <div class="field row">
-        <label for="frigateRtspPort" data-i18n="settings.frigateRtspPort"></label>
-        <input id="frigateRtspPort" type="number" min="1" max="65535" step="1" placeholder="8554">
-      </div>
-    </fieldset>
-
-    <button id="save" class="right" data-i18n="settings.save"></button>
+    </div>
 
     <script type="text/javascript">
       const settingsKeys = [
