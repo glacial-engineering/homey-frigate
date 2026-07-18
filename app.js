@@ -160,7 +160,7 @@ class FrigateApp extends Homey.App {
 
       if (response.ok) {
         lastDetails = await response.json().catch(() => ({}));
-        if (!lastDetails.in_progress) return lastDetails;
+        if (lastDetails.video_path && lastDetails.thumb_path) return lastDetails;
       }
 
       await this.sleep(Math.min(pollIntervalMs, Math.max(deadline - Date.now(), 0)));
