@@ -128,17 +128,49 @@ class FrigateApp extends Homey.App {
     const startTime = endTime - this.numberOrDefault(seconds, 0);
     const url = `${baseUrl}/api/export/${encodeURIComponent(camera)}/start/${startTime}/end/${endTime}`;
 
-    const response = await fetch(url, { method: 'POST' });
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ playback: 'realtime' }),
+    });
     const body = await response.json().catch(() => ({}));
 
     if (!response.ok) {
       throw new Error(`Frigate export request failed (${response.status}): ${body.message || response.statusText}`);
     }
 
+    const exportId = this.stringValue(body.export_id);
+    const exportDetails = await this.waitForExport(baseUrl, exportId, 30000);
+
     return {
-      export_id: this.stringValue(body.export_id),
+      export_id: exportId,
       message: this.stringValue(body.message),
+      video_path: this.stringValue(exportDetails.video_path),
+      thumb_path: this.stringValue(exportDetails.thumb_path),
     };
+  }
+
+  async waitForExport(baseUrl, exportId, timeoutMs) {
+    const deadline = Date.now() + timeoutMs;
+    const pollIntervalMs = 2000;
+    let lastDetails = {};
+
+    while (Date.now() < deadline) {
+      const response = await fetch(`${baseUrl}/api/exports/${encodeURIComponent(exportId)}`);
+
+      if (response.ok) {
+        lastDetails = await response.json().catch(() => ({}));
+        if (!lastDetails.in_progress) return lastDetails;
+      }
+
+      await this.sleep(Math.min(pollIntervalMs, Math.max(deadline - Date.now(), 0)));
+    }
+
+    throw new Error(`Timed out after ${timeoutMs / 1000}s waiting for Frigate export ${exportId} to complete.`);
+  }
+
+  sleep(ms) {
+    return new Promise((resolve) => this.homey.setTimeout(resolve, ms));
   }
 
   connectMqtt() {

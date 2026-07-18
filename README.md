@@ -13,7 +13,7 @@ Athom Homey app that subscribes to Frigate MQTT messages and exposes trigger Flo
 - Subscribes to `frigate/doorbell/press` and `frigate/doorbell/press_unanswered` (custom doorbell topics — see [Doorbell](#doorbell))
 - Subscribes to `frigate/+/classification/+` (state classification models — see [State classification](#state-classification))
 - Trigger cards for event labels and sub-labels, object descriptions, face recognition, license plates, review starts, review alert escalation, review ends, GenAI review summaries, review label matching, and state classification changes
-- Action card to create a Frigate recording export for the prior N seconds
+- Action card to create a Frigate recording export for the prior N seconds, polling until it completes
 - Frigate Camera device with snapshot image and RTSP live view (see [Camera device](#camera-device))
 
 ## Settings
@@ -80,7 +80,7 @@ The card exposes optional `camera`, `model name`, and `state` filters (leave any
 
 ## Actions
 
-- Create recording export for prior seconds — calls Frigate's [export recording API](https://docs.frigate.video/integrations/api/export-recording-export-camera-name-start-start-time-end-end-time-post) to save the recording from a given number of seconds ago until now. Takes `camera` and `seconds` args, and returns `export_id` and `message` tokens.
+- Create recording export for prior seconds — calls Frigate's [export recording API](https://docs.frigate.video/integrations/api/export-recording-export-camera-name-start-start-time-end-end-time-post) to save the recording from a given number of seconds ago until now, then polls [`GET /api/exports/{export_id}`](https://docs.frigate.video/integrations/api/get-export-exports-export-id-get) every 2s until the export finishes, timing out after 30s. Takes `camera` and `seconds` args, and returns `export_id`, `message`, `video_path`, and `thumb_path` tokens.
 
 ## Development
 
