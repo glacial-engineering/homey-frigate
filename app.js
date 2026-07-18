@@ -1,5 +1,7 @@
 const Homey = require('homey');
 const mqtt = require('mqtt');
+const { Readable } = require('stream');
+const { pipeline } = require('stream/promises');
 
 const DEFAULT_TOPIC_PREFIX = 'frigate';
 
@@ -147,13 +149,29 @@ class FrigateApp extends Homey.App {
 
     const exportId = this.stringValue(body.export_id);
     const exportDetails = await this.waitForExport(baseUrl, exportId, 30000);
+    const thumbUrl = this.buildFrigateMediaUrl(exportDetails.thumb_path);
 
     return {
       export_id: exportId,
       message: this.stringValue(body.message),
       video_path: this.buildFrigateMediaUrl(exportDetails.video_path),
-      thumb_path: this.buildFrigateMediaUrl(exportDetails.thumb_path),
+      thumb_path: thumbUrl,
+      thumb_image: await this.buildImageToken(thumbUrl),
     };
+  }
+
+  // Homey's Image#setUrl requires an https:// URL reachable from any
+  // network; frigateBaseUrl is typically a plain-HTTP LAN address, so
+  // stream the bytes through the app instead (same approach the camera
+  // device uses for snapshots).
+  async buildImageToken(url) {
+    const image = await this.homey.images.createImage();
+    image.setStream(async (stream) => {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`Failed to fetch thumbnail (${response.status})`);
+      await pipeline(Readable.fromWeb(response.body), stream);
+    });
+    return image;
   }
 
   async waitForExport(baseUrl, exportId, timeoutMs) {

@@ -408,7 +408,8 @@
           { "name": "export_id", "type": "string", "title": { "en": "Export ID" } },
           { "name": "message", "type": "string", "title": { "en": "Message" } },
           { "name": "video_path", "type": "string", "title": { "en": "Video Path" } },
-          { "name": "thumb_path", "type": "string", "title": { "en": "Thumbnail Path" } }
+          { "name": "thumb_path", "type": "string", "title": { "en": "Thumbnail Path" } },
+          { "name": "thumb_image", "type": "image", "title": { "en": "Thumbnail Image" } }
         ]
       }
     ]
