@@ -397,11 +397,12 @@
       {
         "id": "create_recording_export",
         "title": { "en": "Create recording export for prior seconds" },
-        "titleFormatted": { "en": "Create recording export for camera [[camera]] for the prior [[seconds]] seconds" },
+        "titleFormatted": { "en": "Create recording export for camera [[camera]] for the prior [[seconds]] seconds with name prefix [[name_prefix]]" },
         "hint": { "en": "Calls the Frigate export API to save the recording from the given number of seconds ago until now, then polls for completion (times out after 30s) to return the video and thumbnail paths." },
         "args": [
           { "name": "camera", "type": "text", "title": { "en": "Camera" }, "placeholder": { "en": "front_yard" }, "required": true },
-          { "name": "seconds", "type": "number", "title": { "en": "Prior seconds" }, "min": 1, "step": 1, "placeholder": { "en": "30" }, "required": true }
+          { "name": "seconds", "type": "number", "title": { "en": "Prior seconds" }, "min": 1, "step": 1, "placeholder": { "en": "30" }, "required": true },
+          { "name": "name_prefix", "type": "text", "title": { "en": "With name prefix" }, "placeholder": { "en": "Leave empty to use the camera name" }, "required": false }
         ],
         "tokens": [
           { "name": "export_id", "type": "string", "title": { "en": "Export ID" } },

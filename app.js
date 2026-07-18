@@ -113,11 +113,11 @@ class FrigateApp extends Homey.App {
 
   registerActionListeners() {
     this.cards.createRecordingExport.registerRunListener(async (args) => {
-      return this.createRecordingExport(args.camera, args.seconds);
+      return this.createRecordingExport(args.camera, args.seconds, args.name_prefix);
     });
   }
 
-  async createRecordingExport(camera, seconds) {
+  async createRecordingExport(camera, seconds, namePrefix) {
     const baseUrl = this.stringValue(this.homey.settings.get('frigateBaseUrl')).replace(/\/$/, '');
 
     if (!baseUrl) {
@@ -128,10 +128,16 @@ class FrigateApp extends Homey.App {
     const startTime = endTime - this.numberOrDefault(seconds, 0);
     const url = `${baseUrl}/api/export/${encodeURIComponent(camera)}/start/${startTime}/end/${endTime}`;
 
+    // Frigate's own default name is "<camera> <start> <end>" (server-local
+    // time). Replicate that format here so a custom prefix swaps in for the
+    // camera name but the timestamps still match what Frigate would produce.
+    const prefix = this.stringValue(namePrefix).trim() || camera;
+    const name = `${prefix} ${this.formatExportTimestamp(startTime)} ${this.formatExportTimestamp(endTime)}`;
+
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ playback: 'realtime' }),
+      body: JSON.stringify({ playback: 'realtime', name }),
     });
     const body = await response.json().catch(() => ({}));
 
@@ -171,6 +177,13 @@ class FrigateApp extends Homey.App {
 
   sleep(ms) {
     return new Promise((resolve) => this.homey.setTimeout(resolve, ms));
+  }
+
+  formatExportTimestamp(epochSeconds) {
+    const date = new Date(epochSeconds * 1000);
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} `
+      + `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
   }
 
   connectMqtt() {
