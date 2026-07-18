@@ -150,8 +150,8 @@ class FrigateApp extends Homey.App {
     const exportId = this.stringValue(body.export_id);
     const exportDetails = await this.waitForExport(baseUrl, exportId, 10000);
     // The export may still be generating its thumbnail when we give up
-    // waiting; fall back to the camera's live snapshot so the thumb_image
-    // token always has something to show.
+    // waiting; fall back to the camera's live snapshot so both thumb
+    // tokens always have something to show.
     const thumbUrl = exportDetails.thumb_path
       ? this.buildFrigateMediaUrl(exportDetails.thumb_path)
       : `${baseUrl}/api/${encodeURIComponent(camera)}/latest.jpg`;
@@ -160,7 +160,7 @@ class FrigateApp extends Homey.App {
       export_id: exportId,
       message: this.stringValue(body.message),
       video_path: this.buildFrigateMediaUrl(exportDetails.video_path),
-      thumb_path: this.buildFrigateMediaUrl(exportDetails.thumb_path),
+      thumb_path: thumbUrl,
       thumb_image: await this.buildImageToken(thumbUrl),
     };
   }
