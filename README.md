@@ -13,6 +13,7 @@ Athom Homey app that subscribes to Frigate MQTT messages and exposes trigger Flo
 - Subscribes to `frigate/doorbell/press` and `frigate/doorbell/press_unanswered` (custom doorbell topics — see [Doorbell](#doorbell))
 - Subscribes to `frigate/+/classification/+` (state classification models — see [State classification](#state-classification))
 - Trigger cards for event labels and sub-labels, object descriptions, face recognition, license plates, review starts, review alert escalation, review ends, GenAI review summaries, review label matching, and state classification changes
+- Action card to create a Frigate recording export for the prior N seconds
 - Frigate Camera device with snapshot image and RTSP live view (see [Camera device](#camera-device))
 
 ## Settings
@@ -76,6 +77,10 @@ Only the `ON` edge fires a trigger, so each press produces exactly one Flow run.
 Frigate publishes to `frigate/<camera_name>/classification/<model_name>` whenever a state classification model's detected state changes (it only publishes on change, not on every frame). For example, a "Delivery" model on the `doorbell` camera publishes to `frigate/doorbell/classification/Delivery` with a plain-text payload such as `delivery` or `no_delivery`.
 
 The card exposes optional `camera`, `model name`, and `state` filters (leave any blank to match anything), plus `camera`, `model`, `state`, and `previous_state` tokens.
+
+## Actions
+
+- Create recording export for prior seconds — calls Frigate's [export recording API](https://docs.frigate.video/integrations/api/export-recording-export-camera-name-start-start-time-end-end-time-post) to save the recording from a given number of seconds ago until now. Takes `camera` and `seconds` args, and returns `export_id` and `message` tokens.
 
 ## Development
 

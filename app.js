@@ -20,11 +20,13 @@ class FrigateApp extends Homey.App {
       doorbellPress: this.homey.flow.getTriggerCard('doorbell_press'),
       doorbellUnanswered: this.homey.flow.getTriggerCard('doorbell_unanswered'),
       stateClassificationChanged: this.homey.flow.getTriggerCard('state_classification_changed'),
+      createRecordingExport: this.homey.flow.getActionCard('create_recording_export'),
     };
 
     this.classificationStates = {};
 
     this.registerTriggerListeners();
+    this.registerActionListeners();
     this.connectMqtt();
 
     this.homey.settings.on('set', (key) => {
@@ -107,6 +109,36 @@ class FrigateApp extends Homey.App {
         && this.matchesTextFilter(args.model, state.model)
         && this.matchesTextFilter(args.state, state.state);
     });
+  }
+
+  registerActionListeners() {
+    this.cards.createRecordingExport.registerRunListener(async (args) => {
+      return this.createRecordingExport(args.camera, args.seconds);
+    });
+  }
+
+  async createRecordingExport(camera, seconds) {
+    const baseUrl = this.stringValue(this.homey.settings.get('frigateBaseUrl')).replace(/\/$/, '');
+
+    if (!baseUrl) {
+      throw new Error('Frigate base URL is not configured in the app settings.');
+    }
+
+    const endTime = Date.now() / 1000;
+    const startTime = endTime - this.numberOrDefault(seconds, 0);
+    const url = `${baseUrl}/api/export/${encodeURIComponent(camera)}/start/${startTime}/end/${endTime}`;
+
+    const response = await fetch(url, { method: 'POST' });
+    const body = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(`Frigate export request failed (${response.status}): ${body.message || response.statusText}`);
+    }
+
+    return {
+      export_id: this.stringValue(body.export_id),
+      message: this.stringValue(body.message),
+    };
   }
 
   connectMqtt() {

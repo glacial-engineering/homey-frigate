@@ -392,6 +392,22 @@
           { "name": "previous_state", "type": "string", "title": { "en": "Previous State" } }
         ]
       }
+    ],
+    "actions": [
+      {
+        "id": "create_recording_export",
+        "title": { "en": "Create recording export for prior seconds" },
+        "titleFormatted": { "en": "Create recording export for camera [[camera]] for the prior [[seconds]] seconds" },
+        "hint": { "en": "Calls the Frigate export API to save the recording from the given number of seconds ago until now." },
+        "args": [
+          { "name": "camera", "type": "text", "title": { "en": "Camera" }, "placeholder": { "en": "front_yard" }, "required": true },
+          { "name": "seconds", "type": "number", "title": { "en": "Prior seconds" }, "min": 1, "step": 1, "placeholder": { "en": "30" }, "required": true }
+        ],
+        "tokens": [
+          { "name": "export_id", "type": "string", "title": { "en": "Export ID" } },
+          { "name": "message", "type": "string", "title": { "en": "Message" } }
+        ]
+      }
     ]
   }
 }
