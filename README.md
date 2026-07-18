@@ -80,7 +80,7 @@ The card exposes optional `camera`, `model name`, and `state` filters (leave any
 
 ## Actions
 
-- Create recording export for prior seconds — calls Frigate's [export recording API](https://docs.frigate.video/integrations/api/export-recording-export-camera-name-start-start-time-end-end-time-post) to save the recording from a given number of seconds ago until now, then polls [`GET /api/exports/{export_id}`](https://docs.frigate.video/integrations/api/get-export-exports-export-id-get) every 2s until the export finishes, timing out after 30s. Takes `camera` and `seconds` args, and returns `export_id`, `message`, `video_path`, and `thumb_path` tokens.
+- Create recording export for prior seconds — calls Frigate's [export recording API](https://docs.frigate.video/integrations/api/export-recording-export-camera-name-start-start-time-end-end-time-post) to save the recording from a given number of seconds ago until now, then polls [`GET /api/exports/{export_id}`](https://docs.frigate.video/integrations/api/get-export-exports-export-id-get) every 2s until the export finishes, timing out after 30s. Takes `camera` and `seconds` args, and returns `export_id`, `message`, `video_path`, and `thumb_path` tokens. The `video_path`/`thumb_path` tokens are full URLs (`<frigateBaseUrl>/exports/...` and `<frigateBaseUrl>/clips/export/...`) — Frigate's export API returns them as container filesystem paths under `/media/frigate/...`, which the app rewrites by stripping that prefix and serving from `frigateBaseUrl`, the same way review thumbnails are already handled.
 
 ## Development
 

@@ -145,8 +145,8 @@ class FrigateApp extends Homey.App {
     return {
       export_id: exportId,
       message: this.stringValue(body.message),
-      video_path: this.stringValue(exportDetails.video_path),
-      thumb_path: this.stringValue(exportDetails.thumb_path),
+      video_path: this.buildFrigateMediaUrl(exportDetails.video_path),
+      thumb_path: this.buildFrigateMediaUrl(exportDetails.thumb_path),
     };
   }
 
@@ -563,6 +563,14 @@ class FrigateApp extends Homey.App {
     if (!baseUrl) return path;
 
     return `${baseUrl}${path.startsWith('/') ? '' : '/'}${path}`;
+  }
+
+  // Export video/thumb paths are container filesystem paths under
+  // /media/frigate/... (e.g. /media/frigate/exports/x.mp4), served by
+  // Frigate's web server with that prefix stripped (e.g. /exports/x.mp4).
+  buildFrigateMediaUrl(value) {
+    const path = this.stringValue(value).replace(/^\/media\/frigate/, '');
+    return this.buildFrigateUrl(path);
   }
 
   joinValues(value) {
