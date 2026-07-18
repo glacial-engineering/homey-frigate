@@ -148,14 +148,19 @@ class FrigateApp extends Homey.App {
     }
 
     const exportId = this.stringValue(body.export_id);
-    const exportDetails = await this.waitForExport(baseUrl, exportId, 30000);
-    const thumbUrl = this.buildFrigateMediaUrl(exportDetails.thumb_path);
+    const exportDetails = await this.waitForExport(baseUrl, exportId, 10000);
+    // The export may still be generating its thumbnail when we give up
+    // waiting; fall back to the camera's live snapshot so the thumb_image
+    // token always has something to show.
+    const thumbUrl = exportDetails.thumb_path
+      ? this.buildFrigateMediaUrl(exportDetails.thumb_path)
+      : `${baseUrl}/api/${encodeURIComponent(camera)}/latest.jpg`;
 
     return {
       export_id: exportId,
       message: this.stringValue(body.message),
       video_path: this.buildFrigateMediaUrl(exportDetails.video_path),
-      thumb_path: thumbUrl,
+      thumb_path: this.buildFrigateMediaUrl(exportDetails.thumb_path),
       thumb_image: await this.buildImageToken(thumbUrl),
     };
   }
@@ -190,7 +195,11 @@ class FrigateApp extends Homey.App {
       await this.sleep(Math.min(pollIntervalMs, Math.max(deadline - Date.now(), 0)));
     }
 
-    throw new Error(`Timed out after ${timeoutMs / 1000}s waiting for Frigate export ${exportId} to complete.`);
+    // Give up waiting but still return whatever the export API last
+    // reported (video_path is usually available well before thumb_path),
+    // so callers can fall back rather than fail the whole action.
+    this.log(`Timed out after ${timeoutMs / 1000}s waiting for Frigate export ${exportId} to fully complete; using last known state.`);
+    return lastDetails;
   }
 
   sleep(ms) {
