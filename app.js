@@ -133,8 +133,12 @@ class FrigateApp extends Homey.App {
     // Frigate's own default name is "<camera> <start> <end>" (server-local
     // time). Replicate that format here so a custom prefix swaps in for the
     // camera name but the timestamps still match what Frigate would produce.
+    //
+    // Format in the home's timezone, not the app runtime's: the SDK v3 sandbox
+    // runs the clock in UTC, so Date's local-time getters would emit UTC here.
+    const timezone = await this.homey.clock.getTimezone();
     const prefix = this.stringValue(namePrefix).trim() || camera;
-    const name = `${prefix} ${this.formatExportTimestamp(startTime)} ${this.formatExportTimestamp(endTime)}`;
+    const name = `${prefix} ${this.formatExportTimestamp(startTime, timezone)} ${this.formatExportTimestamp(endTime, timezone)}`;
 
     const response = await fetch(url, {
       method: 'POST',
@@ -206,11 +210,23 @@ class FrigateApp extends Homey.App {
     return new Promise((resolve) => this.homey.setTimeout(resolve, ms));
   }
 
-  formatExportTimestamp(epochSeconds) {
+  formatExportTimestamp(epochSeconds, timezone) {
     const date = new Date(epochSeconds * 1000);
-    const pad = (n) => String(n).padStart(2, '0');
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} `
-      + `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+    // The runtime clock is UTC, so derive the wall-clock fields from the
+    // home's IANA timezone rather than Date's local-time getters.
+    const parts = Object.fromEntries(
+      new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      }).formatToParts(date).map((p) => [p.type, p.value])
+    );
+    return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second}`;
   }
 
   connectMqtt() {
