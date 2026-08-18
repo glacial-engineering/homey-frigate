@@ -10,6 +10,8 @@ class FrigateCameraDevice extends Homey.Device {
   async onInit() {
     this.log('FrigateCameraDevice initialized:', this.getName());
 
+    await this.ensureCapabilities();
+
     this.log('Setting up camera image for', this.getName());
 
     const image = await this.homey.images.createImage();
@@ -37,6 +39,39 @@ class FrigateCameraDevice extends Homey.Device {
     });
 
     await this.setCameraVideo('main', 'Live', video);
+
+    const data = this.getData();
+    this.homey.app.registerCameraDevice(data.cameraName || data.id, this);
+  }
+
+  async onDeleted() {
+    const data = this.getData();
+    this.homey.app.unregisterCameraDevice(data.cameraName || data.id, this);
+  }
+
+  async ensureCapabilities() {
+    const caps = ['alarm_motion', 'alarm_detection', 'alarm_alert', 'frigate_current_objects', 'frigate_current_zones'];
+    for (const cap of caps) {
+      if (!this.hasCapability(cap)) {
+        await this.addCapability(cap);
+      }
+      if (cap.startsWith('alarm_')) {
+        await this.setCapabilityValue(cap, false);
+      } else {
+        await this.setCapabilityValue(cap, '');
+      }
+    }
+  }
+
+  async setFrigateState(state) {
+    const promises = [
+      this.setCapabilityValue('alarm_motion', state.motion),
+      this.setCapabilityValue('alarm_detection', state.detection),
+      this.setCapabilityValue('alarm_alert', state.alert),
+      this.setCapabilityValue('frigate_current_objects', state.objects),
+      this.setCapabilityValue('frigate_current_zones', state.zones),
+    ];
+    await Promise.all(promises);
   }
 
   getRtspUrl() {

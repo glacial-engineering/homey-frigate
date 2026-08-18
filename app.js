@@ -25,10 +25,30 @@ class FrigateApp extends Homey.App {
       createRecordingExport: this.homey.flow.getActionCard('create_recording_export'),
     };
 
+    this.alarmCards = {
+      alarm_detection: {
+        true: this.homey.flow.getDeviceTriggerCard('frigate_detection_on'),
+        false: this.homey.flow.getDeviceTriggerCard('frigate_detection_off'),
+      },
+      alarm_alert: {
+        true: this.homey.flow.getDeviceTriggerCard('frigate_alert_on'),
+        false: this.homey.flow.getDeviceTriggerCard('frigate_alert_off'),
+      },
+    };
+
     this.classificationStates = {};
+    this.cameraDevices = new Map();
+    this.zoneDevices = new Map();
+    this.zoneDetections = new Map();
+    this.zoneAlerts = new Map();
+    this.objectZones = new Map();
+    this.reviews = new Map();
+    this.motionStates = new Map();
+    this.alarmValues = new Map();
 
     this.registerTriggerListeners();
     this.registerActionListeners();
+    this.registerConditionListeners();
     this.connectMqtt();
 
     this.homey.settings.on('set', (key) => {
@@ -116,6 +136,18 @@ class FrigateApp extends Homey.App {
   registerActionListeners() {
     this.cards.createRecordingExport.registerRunListener(async (args) => {
       return this.createRecordingExport(args.camera, args.seconds, args.name_prefix);
+    });
+  }
+
+  registerConditionListeners() {
+    this.homey.flow.getConditionCard('frigate_current_objects_contains').registerRunListener(async (args) => {
+      const value = args.device.getCapabilityValue('frigate_current_objects') || '';
+      return this.matchesContainsFilter(args.object, value);
+    });
+
+    this.homey.flow.getConditionCard('frigate_current_zones_contains').registerRunListener(async (args) => {
+      const value = args.device.getCapabilityValue('frigate_current_zones') || '';
+      return this.matchesContainsFilter(args.zone, value);
     });
   }
 
@@ -275,6 +307,7 @@ class FrigateApp extends Homey.App {
       `${prefix}/doorbell/press`,
       `${prefix}/doorbell/press_unanswered`,
       `${prefix}/+/classification/+`,
+      `${prefix}/+/motion`,
     ];
 
     this.mqttClient.subscribe(topics, (err) => {
@@ -303,6 +336,12 @@ class FrigateApp extends Homey.App {
     const classificationMatch = topic.match(new RegExp(`^${this.escapeRegExp(prefix)}/([^/]+)/classification/([^/]+)$`));
     if (classificationMatch) {
       this.handleStateClassification(classificationMatch[1], classificationMatch[2], message.toString().trim());
+      return;
+    }
+
+    const motionMatch = topic.match(new RegExp(`^${this.escapeRegExp(prefix)}/([^/]+)/motion$`));
+    if (motionMatch) {
+      this.handleMotion(motionMatch[1], message.toString().trim());
       return;
     }
 
@@ -401,10 +440,13 @@ class FrigateApp extends Homey.App {
         after_sub_labels: this.arrayValue(payload.after?.data?.sub_labels),
       };
       this.cards.reviewContainsAll.trigger(tokens, reviewState).catch((err) => this.error(err));
+      this.trackAndApplyReview(payload);
     }
   }
 
   handleEvent(payload) {
+    this.updateObjectZones(payload);
+
     const tokens = this.normalizeEventTokens(payload);
     const state = { ...tokens };
 
@@ -653,6 +695,204 @@ class FrigateApp extends Homey.App {
   arrayValue(value) {
     if (Array.isArray(value)) return value.map((v) => this.stringValue(v).toLowerCase());
     return [];
+  }
+
+  registerCameraDevice(cameraName, device) {
+    if (!this.cameraDevices.has(cameraName)) this.cameraDevices.set(cameraName, new Set());
+    this.cameraDevices.get(cameraName).add(device);
+    device.setFrigateState(this.computeCameraState(cameraName)).catch((err) => this.error(err));
+  }
+
+  unregisterCameraDevice(cameraName, device) {
+    this.cameraDevices.get(cameraName)?.delete(device);
+  }
+
+  handleMotion(cameraName, value) {
+    const isMotion = value.toUpperCase() === 'ON';
+    this.motionStates.set(cameraName, isMotion);
+    this.pushCameraState(cameraName);
+  }
+
+  trackAndApplyReview(payload) {
+    const before = payload.before || {};
+    const after = payload.after || {};
+    const id = after.id || before.id;
+    if (!id) return;
+
+    if (payload.type === 'end') {
+      this.reviews.delete(id);
+    } else {
+      this.reviews.set(id, {
+        id,
+        camera: after.camera || before.camera || '',
+        severity: after.severity || before.severity || '',
+        objects: this.arrayValue(after.data?.objects || before.data?.objects),
+        zones: this.zoneList(after.data?.zones || before.data?.zones),
+      });
+    }
+
+    const camera = after.camera || before.camera;
+    if (camera) this.pushCameraState(camera);
+
+    const affectedZones = new Set([
+      ...this.zoneList(before.data?.zones),
+      ...this.zoneList(after.data?.zones),
+    ]);
+    for (const zone of affectedZones) {
+      this.pushZoneState(zone);
+    }
+  }
+
+  computeCameraState(cameraName) {
+    const motion = !!this.motionStates.get(cameraName);
+    const objects = new Set();
+    const zones = new Set();
+    let detection = false;
+    let alert = false;
+
+    for (const review of this.reviews.values()) {
+      if (review.camera !== cameraName) continue;
+      detection = true;
+      if (review.severity === 'alert') alert = true;
+      review.objects.forEach((o) => objects.add(o));
+      review.zones.forEach((z) => zones.add(z));
+    }
+
+    return {
+      motion,
+      detection,
+      alert,
+      objects: [...objects].join(', '),
+      zones: [...zones].join(', '),
+    };
+  }
+
+  pushCameraState(cameraName) {
+    const devices = this.cameraDevices.get(cameraName);
+    if (!devices) return;
+
+    const state = this.computeCameraState(cameraName);
+    for (const device of devices) {
+      device.setFrigateState(state).catch((err) => this.error(err));
+      this.handleAlarmChange(device, 'alarm_detection', state.detection).catch((err) => this.error(err));
+      this.handleAlarmChange(device, 'alarm_alert', state.alert).catch((err) => this.error(err));
+    }
+  }
+
+  registerZoneDevice(zoneName, device) {
+    const key = this.normalizeZoneName(zoneName);
+    if (!this.zoneDevices.has(key)) this.zoneDevices.set(key, new Set());
+    this.zoneDevices.get(key).add(device);
+    device.setZoneState(this.computeZoneState(key)).catch((err) => this.error(err));
+  }
+
+  unregisterZoneDevice(zoneName, device) {
+    const key = this.normalizeZoneName(zoneName);
+    this.zoneDevices.get(key)?.delete(device);
+  }
+
+  computeZoneState(zoneName) {
+    const key = this.normalizeZoneName(zoneName);
+    return {
+      detection: (this.zoneDetections.get(key)?.size || 0) > 0,
+      alert: (this.zoneAlerts.get(key)?.size || 0) > 0,
+    };
+  }
+
+  pushZoneState(zoneName) {
+    const key = this.normalizeZoneName(zoneName);
+    const devices = this.zoneDevices.get(key);
+    if (!devices) return;
+
+    const state = this.computeZoneState(key);
+    for (const device of devices) {
+      device.setZoneState(state).catch((err) => this.error(err));
+      this.handleAlarmChange(device, 'alarm_detection', state.detection).catch((err) => this.error(err));
+      this.handleAlarmChange(device, 'alarm_alert', state.alert).catch((err) => this.error(err));
+    }
+  }
+
+  async handleAlarmChange(device, capability, value) {
+    const card = this.alarmCards[capability]?.[value ? 'true' : 'false'];
+    if (!card) return;
+
+    // Only fire on real transitions; state is recomputed on every MQTT message.
+    const key = `${device.driver.id}:${device.getData().id}:${capability}`;
+    if (this.alarmValues.get(key) === value) return;
+    this.alarmValues.set(key, value);
+
+    await card.trigger(device);
+  }
+
+  normalizeZoneName(value) {
+    return this.stringValue(value).toLowerCase().replace(/\s+/g, '_');
+  }
+
+  zoneList(value) {
+    if (!Array.isArray(value)) return [];
+    return value.map((v) => this.normalizeZoneName(v));
+  }
+
+  updateObjectZones(payload) {
+    const before = payload.before || {};
+    const after = payload.after || {};
+    const id = after.id || before.id;
+    if (!id) return;
+
+    const beforeZones = this.objectZones.get(id) || new Set();
+    const isEnded = payload.type === 'end' || after.end_time != null;
+    const afterZones = isEnded ? new Set() : new Set(this.zoneList(after.current_zones));
+    const afterLabel = this.stringValue(after.label || before.label).toLowerCase();
+    const isAlert = this.isAlertLabel(afterLabel);
+
+    const affectedZones = new Set([...beforeZones, ...afterZones]);
+
+    for (const zone of affectedZones) {
+      const inAfter = afterZones.has(zone);
+      const inBefore = beforeZones.has(zone);
+
+      if (inAfter) {
+        if (!inBefore) this.addObjectToZone(zone, id);
+        this.setZoneAlert(zone, id, isAlert);
+      } else if (inBefore) {
+        this.removeObjectFromZone(zone, id);
+      }
+
+      this.pushZoneState(zone);
+    }
+
+    if (afterZones.size === 0) {
+      this.objectZones.delete(id);
+    } else {
+      this.objectZones.set(id, afterZones);
+    }
+  }
+
+  isAlertLabel(label) {
+    return ['person', 'car'].includes(this.stringValue(label).toLowerCase());
+  }
+
+  addObjectToZone(zone, id) {
+    if (!this.zoneDetections.has(zone)) this.zoneDetections.set(zone, new Set());
+    this.zoneDetections.get(zone).add(id);
+  }
+
+  removeObjectFromZone(zone, id) {
+    this.zoneDetections.get(zone)?.delete(id);
+    this.zoneAlerts.get(zone)?.delete(id);
+    if (this.zoneDetections.get(zone)?.size === 0) this.zoneDetections.delete(zone);
+    if (this.zoneAlerts.get(zone)?.size === 0) this.zoneAlerts.delete(zone);
+  }
+
+  setZoneAlert(zone, id, isAlert) {
+    if (!this.zoneAlerts.has(zone)) this.zoneAlerts.set(zone, new Set());
+    const alertSet = this.zoneAlerts.get(zone);
+    if (isAlert) {
+      alertSet.add(id);
+    } else {
+      alertSet.delete(id);
+    }
+    if (alertSet.size === 0) this.zoneAlerts.delete(zone);
   }
 }
 
