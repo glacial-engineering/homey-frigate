@@ -22,6 +22,7 @@ class FrigateApp extends Homey.App {
       doorbellPress: this.homey.flow.getTriggerCard('doorbell_press'),
       doorbellUnanswered: this.homey.flow.getTriggerCard('doorbell_unanswered'),
       stateClassificationChanged: this.homey.flow.getTriggerCard('state_classification_changed'),
+      objectDetectionChanged: this.homey.flow.getTriggerCard('object_detection_changed'),
       createRecordingExport: this.homey.flow.getActionCard('create_recording_export'),
     };
 
@@ -45,6 +46,7 @@ class FrigateApp extends Homey.App {
     this.reviews = new Map();
     this.motionStates = new Map();
     this.alarmValues = new Map();
+    this.objectCounts = new Map();
 
     this.registerTriggerListeners();
     this.registerActionListeners();
@@ -130,6 +132,13 @@ class FrigateApp extends Homey.App {
       return this.matchesTextFilter(args.camera, state.camera)
         && this.matchesTextFilter(args.model, state.model)
         && this.matchesTextFilter(args.state, state.state);
+    });
+
+    this.cards.objectDetectionChanged.registerRunListener(async (args, state) => {
+      return this.matchesTextFilter(args.camera, state.camera)
+        && this.matchesTextFilter(args.zone, state.zone)
+        && this.matchesTextFilter(args.object, state.object)
+        && (!args.state || args.state === 'any' || (args.state === 'true') === state.state);
     });
   }
 
@@ -308,6 +317,7 @@ class FrigateApp extends Homey.App {
       `${prefix}/doorbell/press_unanswered`,
       `${prefix}/+/classification/+`,
       `${prefix}/+/motion`,
+      `${prefix}/+/+`,
     ];
 
     this.mqttClient.subscribe(topics, (err) => {
@@ -342,6 +352,17 @@ class FrigateApp extends Homey.App {
     const motionMatch = topic.match(new RegExp(`^${this.escapeRegExp(prefix)}/([^/]+)/motion$`));
     if (motionMatch) {
       this.handleMotion(motionMatch[1], message.toString().trim());
+      return;
+    }
+
+    // Frigate's native per-camera/per-zone object count topics, e.g.
+    // frigate/doorbell/package or frigate/porch/package, carry a plain
+    // integer count (not JSON). Any other two-segment topic under the
+    // prefix is handled above with an explicit match, so this is a safe
+    // catch-all; non-numeric payloads are ignored.
+    const objectCountMatch = topic.match(new RegExp(`^${this.escapeRegExp(prefix)}/([^/]+)/([^/]+)$`));
+    if (objectCountMatch && /^\d+$/.test(message.toString().trim())) {
+      this.handleObjectCount(objectCountMatch[1], objectCountMatch[2], message.toString().trim());
       return;
     }
 
@@ -711,6 +732,26 @@ class FrigateApp extends Homey.App {
     const isMotion = value.toUpperCase() === 'ON';
     this.motionStates.set(cameraName, isMotion);
     this.pushCameraState(cameraName);
+  }
+
+  handleObjectCount(scope, object, countStr) {
+    const key = `${scope}/${object}`;
+    const wasActive = (this.objectCounts.get(key) || 0) > 0;
+    const count = parseInt(countStr, 10);
+    this.objectCounts.set(key, count);
+
+    const isActive = count > 0;
+    if (wasActive === isActive) return; // only fire on the 0<->nonzero edge
+
+    const isZone = this.zoneDevices.has(this.normalizeZoneName(scope));
+    const tokens = {
+      camera: isZone ? '' : scope,
+      zone: isZone ? scope : '',
+      object,
+      state: isActive,
+    };
+
+    this.cards.objectDetectionChanged.trigger(tokens, tokens).catch((err) => this.error(err));
   }
 
   trackAndApplyReview(payload) {

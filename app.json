@@ -489,6 +489,33 @@
           { "name": "state", "type": "string", "title": { "en": "State" } },
           { "name": "previous_state", "type": "string", "title": { "en": "Previous State" } }
         ]
+      },
+      {
+        "id": "object_detection_changed",
+        "title": { "en": "Object detection changed" },
+        "titleFormatted": { "en": "Object [[object]] detection changes to [[state]] on [[camera]] in zone [[zone]]" },
+        "hint": { "en": "Fires on Frigate's native per-camera/per-zone object count topic (frigate/<camera_or_zone>/<object>), e.g. frigate/doorbell/package or frigate/porch/package, crossing zero. This reflects Frigate's real object tracking directly, not an AI state classification model. A camera-scoped event leaves zone empty and vice versa." },
+        "args": [
+          { "name": "camera", "type": "text", "title": { "en": "Camera" }, "placeholder": { "en": "Leave empty for any camera" }, "required": false },
+          { "name": "zone", "type": "text", "title": { "en": "Zone" }, "placeholder": { "en": "Leave empty for any zone" }, "required": false },
+          { "name": "object", "type": "text", "title": { "en": "Object" }, "placeholder": { "en": "package" }, "required": false },
+          {
+            "name": "state",
+            "type": "dropdown",
+            "title": { "en": "State" },
+            "values": [
+              { "id": "any", "title": { "en": "Any" } },
+              { "id": "true", "title": { "en": "Detected" } },
+              { "id": "false", "title": { "en": "Cleared" } }
+            ]
+          }
+        ],
+        "tokens": [
+          { "name": "camera", "type": "string", "title": { "en": "Camera" } },
+          { "name": "zone", "type": "string", "title": { "en": "Zone" } },
+          { "name": "object", "type": "string", "title": { "en": "Object" } },
+          { "name": "state", "type": "boolean", "title": { "en": "Detected" } }
+        ]
       }
     ],
     "conditions": [
